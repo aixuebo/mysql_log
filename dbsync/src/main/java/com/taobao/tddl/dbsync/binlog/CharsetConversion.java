@@ -10,6 +10,7 @@ import org.apache.commons.logging.LogFactory;
  * com.mysql.jdbc.CharsetMapping.
  * 
  * @author <a href="mailto:changyuan.lh@taobao.com">Changyuan.lh</a>
+ * 公共类,实现mysql和java的字符集类型转换
  */
 public final class CharsetConversion {
 
@@ -17,10 +18,10 @@ public final class CharsetConversion {
 
     static final class Entry {
 
-        protected final int    charsetId;
-        protected final String mysqlCharset;
-        protected final String mysqlCollation;
-        protected final String javaCharset;
+        protected final int    charsetId;//唯一标识
+        protected final String mysqlCharset;//mysql的字符集
+        protected final String mysqlCollation;//mysql的字符集
+        protected final String javaCharset;//java的字符集
 
         Entry(final int id, String mysqlCharset, // NL
               String mysqlCollation, String javaCharset){
@@ -34,6 +35,7 @@ public final class CharsetConversion {
     // Character set data used in lookups. The array will be sparse.
     static final Entry[] entries = new Entry[0xff];
 
+    //通过数组获取Entry对象
     static Entry getEntry(final int id) {
         if (id >= 0 && id < entries.length) {
             return entries[id];
@@ -266,6 +268,7 @@ public final class CharsetConversion {
 
     /**
      * Return defined charset name for mysql.
+     * 返回mysql的字符集
      */
     public static String getCharset(final int id) {
         Entry entry = getEntry(id);
@@ -280,6 +283,7 @@ public final class CharsetConversion {
 
     /**
      * Return defined collaction name for mysql.
+     * 返回mysql的collaction
      */
     public static String getCollation(final int id) {
         Entry entry = getEntry(id);
@@ -294,6 +298,7 @@ public final class CharsetConversion {
 
     /**
      * Return converted charset name for java.
+     * 返回java的字符集
      */
     public static String getJavaCharset(final int id) {
         Entry entry = getEntry(id);

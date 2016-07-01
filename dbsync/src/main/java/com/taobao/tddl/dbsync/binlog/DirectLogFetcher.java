@@ -34,21 +34,22 @@ import org.apache.commons.logging.LogFactory;
  * 
  * @author <a href="mailto:changyuan.lh@taobao.com">Changyuan.lh</a>
  * @version 1.0
+ * 通过JDBC等直接方式,去连接mysql,获取binlog等信息,而不是直接读取binlog文件了
  */
 public final class DirectLogFetcher extends LogFetcher {
 
     protected static final Log logger                          = LogFactory.getLog(DirectLogFetcher.class);
 
     /** Command to dump binlog */
-    public static final byte   COM_BINLOG_DUMP                 = 18;
+    public static final byte   COM_BINLOG_DUMP                 = 18;//设置binlog的信息
 
     /** Packet header sizes */
-    public static final int    NET_HEADER_SIZE                 = 4;
+    public static final int    NET_HEADER_SIZE                 = 4;//包头文件的大小
     public static final int    SQLSTATE_LENGTH                 = 5;
 
-    /** Packet offsets */
-    public static final int    PACKET_LEN_OFFSET               = 0;
-    public static final int    PACKET_SEQ_OFFSET               = 3;
+    /** Packet offsets 头文件的位置*/
+    public static final int    PACKET_LEN_OFFSET               = 0;//body大小的位置
+    public static final int    PACKET_SEQ_OFFSET               = 3;//记录包序号的位置
 
     /** Maximum packet length */
     public static final int    MAX_PACKET_LENGTH               = (256 * 256 * 256 - 1);
@@ -57,9 +58,9 @@ public final class DirectLogFetcher extends LogFetcher {
     public static final int    BINLOG_DUMP_NON_BLOCK           = 1;
     public static final int    BINLOG_SEND_ANNOTATE_ROWS_EVENT = 2;
 
-    private Connection         conn;
-    private OutputStream       mysqlOutput;
-    private InputStream        mysqlInput;
+    private Connection         conn;//连接器
+    private OutputStream       mysqlOutput;//mysql的输出信息
+    private InputStream        mysqlInput;//mysql的输入流
 
     public DirectLogFetcher(){
         super(DEFAULT_INITIAL_CAPACITY, DEFAULT_GROWTH_FACTOR);
@@ -73,6 +74,13 @@ public final class DirectLogFetcher extends LogFetcher {
         super(initialCapacity, growthFactor);
     }
 
+    /**
+     * 类型转换,实例类conn一定以下类的一个子类
+     * connClazz
+     * org.springframework.jdbc.datasource.ConnectionProxy,那么就是执行getTargetConnection方法
+     * org.apache.commons.dbcp.DelegatingConnection,那么就是执行_conn属性
+     * com.mysql.jdbc.Connection
+     */
     private static final Object unwrapConnection(Object conn, Class<?> connClazz) throws IOException {
         while (!connClazz.isInstance(conn)) {
             try {
@@ -115,6 +123,7 @@ public final class DirectLogFetcher extends LogFetcher {
         return conn;
     }
 
+    //执行该class的没有参数的name方法,返回object对象
     private static final Object invokeMethod(Object obj, Class<?> objClazz, String name) {
         try {
             Method method = objClazz.getMethod(name, (Class<?>[]) null);
@@ -129,6 +138,7 @@ public final class DirectLogFetcher extends LogFetcher {
         }
     }
 
+    //获取objClazz的name属性对应的对象Object
     private static final Object getDeclaredField(Object obj, Class<?> objClazz, String name) {
         try {
             Field field = objClazz.getDeclaredField(name);
@@ -201,6 +211,7 @@ public final class DirectLogFetcher extends LogFetcher {
      * Put a byte in the buffer.
      * 
      * @param b the byte to put in the buffer
+     * buffer中存放1个byte
      */
     protected final void putByte(byte b) {
         ensureCapacity(position + 1);
@@ -212,6 +223,7 @@ public final class DirectLogFetcher extends LogFetcher {
      * Put 16-bit integer in the buffer.
      * 
      * @param i16 the integer to put in the buffer
+     * buffer中存放2个byte,该2个byte表示int
      */
     protected final void putInt16(int i16) {
         ensureCapacity(position + 2);
@@ -225,6 +237,7 @@ public final class DirectLogFetcher extends LogFetcher {
      * Put 32-bit integer in the buffer.
      * 
      * @param i32 the integer to put in the buffer
+     * buffer中存放4个int,该4个byte表示long
      */
     protected final void putInt32(long i32) {
         ensureCapacity(position + 4);
@@ -240,20 +253,22 @@ public final class DirectLogFetcher extends LogFetcher {
      * Put a string in the buffer.
      * 
      * @param s the value to put in the buffer
+     * buffer中存放String个字节
      */
     protected final void putString(String s) {
         ensureCapacity(position + (s.length() * 2) + 1);
 
         System.arraycopy(s.getBytes(), 0, buffer, position, s.length());
         position += s.length();
-        buffer[position++] = 0;
+        buffer[position++] = 0;//存储完string后,加一个0的字节内容,表示是string结束了
     }
 
+    //设置binlog的一些信息,比如要读取哪个binlog文件,是什么slave读取的该文件等信息
     protected final void sendBinlogDump(String fileName, final long filePosition, final int serverId,
                                         boolean nonBlocking) throws IOException {
         position = NET_HEADER_SIZE;
 
-        putByte(COM_BINLOG_DUMP);
+        putByte(COM_BINLOG_DUMP);//设置binlog的一些信息
         putInt32(filePosition);
         int binlog_flags = nonBlocking ? BINLOG_DUMP_NON_BLOCK : 0;
         binlog_flags |= BINLOG_SEND_ANNOTATE_ROWS_EVENT;
@@ -267,7 +282,7 @@ public final class DirectLogFetcher extends LogFetcher {
         buf[1] = (byte) (len >>> 8);
         buf[2] = (byte) (len >>> 16);
 
-        mysqlOutput.write(buffer, 0, position);
+        mysqlOutput.write(buffer, 0, position);//从buffer中第0个位置开始读取,读取position个字节,写入到输出流中
         mysqlOutput.flush();
     }
 
@@ -279,15 +294,17 @@ public final class DirectLogFetcher extends LogFetcher {
     public boolean fetch() throws IOException {
         try {
             // Fetching packet header from input.
-            if (!fetch0(0, NET_HEADER_SIZE)) {
+        	//先读取4个字节的头文件
+            if (!fetch0(0, NET_HEADER_SIZE)) {//false说明没有读全就没有数据了,显然是不对的,因此返回false,退出抓去
                 logger.warn("Reached end of input stream while fetching header");
                 return false;
             }
 
             // Fetching the first packet(may a multi-packet).
+            //读取body大小和bao序号
             int netlen = getUint24(PACKET_LEN_OFFSET);
             int netnum = getUint8(PACKET_SEQ_OFFSET);
-            if (!fetch0(NET_HEADER_SIZE, netlen)) {
+            if (!fetch0(NET_HEADER_SIZE, netlen)) {//抓去body大小的内容,
                 logger.warn("Reached end of input stream: packet #" + netnum + ", len = " + netlen);
                 return false;
             }
@@ -353,16 +370,20 @@ public final class DirectLogFetcher extends LogFetcher {
         }
     }
 
+    //需要读取len个字节,true表示成功抓去了len个字节
     private final boolean fetch0(final int off, final int len) throws IOException {
         ensureCapacity(off + len);
 
+        //count表示每一次读取的信息字节数,n表示多次循环后总共读取的字节数,len表示需要读取的字节数
         for (int count, n = 0; n < len; n += count) {
-            if (0 > (count = mysqlInput.read(buffer, off + n, len - n))) {
-                // Reached end of input stream
+        	//每次循环n读取的总字节数都会有变化,但是off一直没变化,因此off+n就是要插入buffer的开始位置,从流中读取的最大长度就是len-已经读取的n个,即剩余字节数
+            if (0 > (count = mysqlInput.read(buffer, off + n, len - n))) {//说明没有信息了,因此返回0>-1,因此最终返回false
+                // Reached end of input stream 读取到数据流的结尾了
                 return false;
             }
         }
 
+        //因为在off之后插入了len个字节,因此有效字节就是off+len个,其实这句话有点看不懂,按道理应该有效字节是limit+len个才对,不过这个也说明是按照程序的逻辑,强依赖off的,代码必须严谨
         if (limit < off + len) limit = off + len;
         return true;
     }
@@ -371,6 +392,7 @@ public final class DirectLogFetcher extends LogFetcher {
      * {@inheritDoc}
      * 
      * @see com.taobao.tddl.dbsync.binlog.LogFetcher#close()
+     * 关闭连接流
      */
     public void close() throws IOException {
         try {

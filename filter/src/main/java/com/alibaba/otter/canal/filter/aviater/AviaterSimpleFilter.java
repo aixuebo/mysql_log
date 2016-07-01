@@ -22,7 +22,7 @@ public class AviaterSimpleFilter implements CanalEventFilter<String> {
 
     private static final String SPLIT             = ",";
 
-    private static final String FILTER_EXPRESSION = "include(list,target)";
+    private static final String FILTER_EXPRESSION = "include(list,target)";//表达式含义说明,list表示一个集合,用逗号拆分,去匹配target
 
     private final Expression    exp               = AviatorEvaluator.compile(FILTER_EXPRESSION, true);
 

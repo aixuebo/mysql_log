@@ -9,5 +9,6 @@ import com.alibaba.otter.canal.filter.exception.CanalFilterException;
  */
 public interface CanalEventFilter<T> {
 
+	//对一个对象进行过滤,返回boolean类型
     boolean filter(T event) throws CanalFilterException;
 }

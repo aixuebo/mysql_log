@@ -41,13 +41,14 @@ public class EntryEventSink extends AbstractCanalEventSink<List<CanalEntry.Entry
     protected AtomicLong           lastEmptyTransactionCount     = new AtomicLong(0L);
 
     public EntryEventSink(){
-        addHandler(new HeartBeatEntryEventHandler());
+        addHandler(new HeartBeatEntryEventHandler());//添加一个将心跳事件刨除的处理拦截器
     }
 
     public void start() {
         super.start();
         Assert.notNull(eventStore);
 
+        //开启所有的拦截器
         for (CanalEventDownStreamHandler handler : getHandlers()) {
             if (!handler.isStart()) {
                 handler.start();
@@ -58,6 +59,7 @@ public class EntryEventSink extends AbstractCanalEventSink<List<CanalEntry.Entry
     public void stop() {
         super.stop();
 
+        //关闭所有的拦截器
         for (CanalEventDownStreamHandler handler : getHandlers()) {
             if (handler.isStart()) {
                 handler.stop();

@@ -7,6 +7,7 @@ import com.alibaba.otter.canal.common.AbstractCanalLifeCycle;
 
 /**
  * 基于log的alarm机制实现
+ * 基于log日志实现的报警机制
  * 
  * @author jianghang 2012-8-22 下午10:12:35
  * @version 1.0.0

@@ -7,6 +7,9 @@ import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.PropertyEditorRegistrar;
 import org.springframework.beans.PropertyEditorRegistry;
 
+/**
+ * spring用于一个参数,该参数是由ip:port组成的,将其解析称InetSocketAddress对象
+ */
 public class SocketAddressEditor extends PropertyEditorSupport implements PropertyEditorRegistrar {
 
     public void registerCustomEditors(PropertyEditorRegistry registry) {

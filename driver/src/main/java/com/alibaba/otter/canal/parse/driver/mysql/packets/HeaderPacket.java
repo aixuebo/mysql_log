@@ -19,6 +19,7 @@ import com.alibaba.otter.canal.common.utils.CanalToStringStyle;
  * "precedes the packet" rather than "is included in the packet".<br>
  * 
  * @author fujohnwang
+ * 定义一个头包,并且可以发送和接收该头包
  */
 public class HeaderPacket implements IPacket {
 
@@ -26,8 +27,8 @@ public class HeaderPacket implements IPacket {
      * this field indicates the packet length that follows the header, with
      * header packet's 4 bytes excluded.
      */
-    private int  packetBodyLength;
-    private byte packetSequenceNumber;
+    private int  packetBodyLength;//用3个字节存储包的长度
+    private byte packetSequenceNumber;//表示该包的序号,有可能长度很大的包,分多次发送的,因此这个是序号
 
     /**
      * little-endian byte order

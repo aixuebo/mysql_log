@@ -5,6 +5,7 @@ import java.io.IOException;
 
 import com.alibaba.otter.canal.parse.driver.mysql.packets.CommandPacket;
 
+//发送查询命令
 public class QueryCommandPacket extends CommandPacket {
 
     private String queryString;
@@ -13,9 +14,11 @@ public class QueryCommandPacket extends CommandPacket {
         setCommand((byte) 0x03);
     }
 
+    //接到字节信息后,进行处理
     public void fromBytes(byte[] data) throws IOException {
     }
 
+    //将发送的信息转换成字节数组
     public byte[] toBytes() throws IOException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         out.write(getCommand());

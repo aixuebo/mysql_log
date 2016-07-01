@@ -20,6 +20,7 @@ import com.google.common.collect.MigrateMap;
  */
 public class PatternUtils {
 
+	//每一个正则表达式字符串对应一个正则表达式类
     @SuppressWarnings("deprecation")
     private static Map<String, Pattern> patterns = MigrateMap.makeComputingMap(new MapMaker().softValues(),
                                                      new Function<String, Pattern>() {

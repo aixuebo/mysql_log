@@ -8,20 +8,26 @@ import com.alibaba.otter.canal.filter.CanalEventFilter;
 
 /**
  * @author jianghang 2012-7-23 下午01:02:45
+ * 代表一个sink事件的抽象实现类
  */
 public abstract class AbstractCanalEventSink<T> extends AbstractCanalLifeCycle implements CanalEventSink<T> {
 
+	//事件过滤器
     protected CanalEventFilter                  filter;
+    
+    //拦截器集合,当处理事件的时候,要以此调用该集合
     protected List<CanalEventDownStreamHandler> handlers = new ArrayList<CanalEventDownStreamHandler>();
 
     public void setFilter(CanalEventFilter filter) {
         this.filter = filter;
     }
 
+    //添加拦截器
     public void addHandler(CanalEventDownStreamHandler handler) {
         this.handlers.add(handler);
     }
 
+    //获取第N个事件拦截器
     public CanalEventDownStreamHandler getHandler(int index) {
         return this.handlers.get(index);
     }

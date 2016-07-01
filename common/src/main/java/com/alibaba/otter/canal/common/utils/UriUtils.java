@@ -14,6 +14,7 @@ import org.apache.commons.lang.StringUtils;
 /**
  * @author zebin.xuzb 2012-11-15 下午3:53:09
  * @since 1.0.0
+ * 对url的解析的query转换成Map<String,String>形式
  */
 public final class UriUtils {
 
@@ -49,15 +50,16 @@ public final class UriUtils {
     }
 
     public static Map<String, String> parseQuery(final URI uri, final String encoding) {
-        if (uri == null || StringUtils.isBlank(uri.getQuery())) {
+        if (uri == null || StringUtils.isBlank(uri.getQuery())) {//没有query,则返回空的集合
             return Collections.EMPTY_MAP;
         }
         String query = uri.getRawQuery();
         HashMap<String, String> params = new HashMap<String, String>();
         @SuppressWarnings("resource")
         Scanner scan = new Scanner(query);
-        scan.useDelimiter(SPLIT);
+        scan.useDelimiter(SPLIT);//按照&拆分字符串
         while (scan.hasNext()) {
+        	//解析key=value
             String token = scan.next().trim();
             String[] pair = token.split(EQUAL);
             String key = decode(pair[0], encoding);

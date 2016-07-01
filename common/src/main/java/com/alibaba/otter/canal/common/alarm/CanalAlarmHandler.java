@@ -4,7 +4,7 @@ import com.alibaba.otter.canal.common.CanalLifeCycle;
 
 /**
  * canal报警处理机制
- * 
+ * 目前仅仅支持log日志的报警机制
  * @author jianghang 2012-8-22 下午10:08:56
  * @version 1.0.0
  */

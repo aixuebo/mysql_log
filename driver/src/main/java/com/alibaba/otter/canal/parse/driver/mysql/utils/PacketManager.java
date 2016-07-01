@@ -8,12 +8,14 @@ import com.alibaba.otter.canal.parse.driver.mysql.packets.HeaderPacket;
 
 public abstract class PacketManager {
 
+	//从SocketChannel中读取len个字节,一般是4个字节,并且转换成HeaderPacket头对象
     public static HeaderPacket readHeader(SocketChannel ch, int len) throws IOException {
         HeaderPacket header = new HeaderPacket();
         header.fromBytes(readBytesAsBuffer(ch, len).array());
         return header;
     }
 
+    //从SocketChannel中读取len个字节
     public static ByteBuffer readBytesAsBuffer(SocketChannel ch, int len) throws IOException {
         ByteBuffer buffer = ByteBuffer.allocate(len);
         while (buffer.hasRemaining()) {
@@ -25,6 +27,7 @@ public abstract class PacketManager {
         return buffer;
     }
 
+    //从SocketChannel中读取len个字节
     public static byte[] readBytes(SocketChannel ch, int len) throws IOException {
         return readBytesAsBuffer(ch, len).array();
     }
@@ -39,6 +42,7 @@ public abstract class PacketManager {
      * @param len
      * @return
      * @throws IOException
+     * 将ByteBuffer集合的内容发送出去
      */
     public static void write(SocketChannel ch, ByteBuffer[] srcs) throws IOException {
         @SuppressWarnings("unused")
@@ -56,10 +60,12 @@ public abstract class PacketManager {
         // }
     }
 
+    //将body的内容发送出去,包的序号是0
     public static void write(SocketChannel ch, byte[] body) throws IOException {
         write(ch, body, (byte) 0);
     }
 
+    //将body的内容发送出去
     public static void write(SocketChannel ch, byte[] body, byte packetSeqNumber) throws IOException {
         HeaderPacket header = new HeaderPacket();
         header.setPacketBodyLength(body.length);

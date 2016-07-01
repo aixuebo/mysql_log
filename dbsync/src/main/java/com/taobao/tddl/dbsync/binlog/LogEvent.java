@@ -78,7 +78,7 @@ public abstract class LogEvent {
      */
     public static final int    EVENT_TYPE_OFFSET                        = 4;
     public static final int    SERVER_ID_OFFSET                         = 5;
-    public static final int    EVENT_LEN_OFFSET                         = 9;
+    public static final int    EVENT_LEN_OFFSET                         = 9;//在第9位置上,有一个int,表示一共多少个字节是有效的
     public static final int    LOG_POS_OFFSET                           = 13;
     public static final int    FLAGS_OFFSET                             = 17;
 

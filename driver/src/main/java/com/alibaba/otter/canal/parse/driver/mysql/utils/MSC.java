@@ -5,16 +5,17 @@ package com.alibaba.otter.canal.parse.driver.mysql.utils;
  * constants that is used in mysql server.<br>
  * 
  * @author fujohnwang
+ * mysql的常量类,是mysql的服务端配置的值
  */
 public abstract class MSC {
 
     public static final int  MAX_PACKET_LENGTH                  = (1 << 24);
     public static final int  HEADER_PACKET_LENGTH_FIELD_LENGTH  = 3;
     public static final int  HEADER_PACKET_LENGTH_FIELD_OFFSET  = 0;
-    public static final int  HEADER_PACKET_LENGTH               = 4;
+    public static final int  HEADER_PACKET_LENGTH               = 4;//包头的长度.4个字节
     public static final int  HEADER_PACKET_NUMBER_FIELD_LENGTH  = 1;
 
-    public static final byte NULL_TERMINATED_STRING_DELIMITER   = 0x00;
+    public static final byte NULL_TERMINATED_STRING_DELIMITER   = 0x00;//终止拆分字符
     public static final byte DEFAULT_PROTOCOL_VERSION           = 0x0a;
 
     public static final int  FIELD_COUNT_FIELD_LENGTH           = 1;

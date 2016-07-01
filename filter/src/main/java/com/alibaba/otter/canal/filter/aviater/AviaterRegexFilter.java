@@ -24,7 +24,7 @@ public class AviaterRegexFilter implements CanalEventFilter<String> {
 
     private static final String             SPLIT             = ",";
     private static final String             PATTERN_SPLIT     = "|";
-    private static final String             FILTER_EXPRESSION = "regex(pattern,target)";
+    private static final String             FILTER_EXPRESSION = "regex(pattern,target)";//表达式含义说明,pattern表示一个正则,去匹配target
     private static final RegexFunction      regexFunction     = new RegexFunction();
     private final Expression                exp               = AviatorEvaluator.compile(FILTER_EXPRESSION, true);
     static {
@@ -34,7 +34,7 @@ public class AviaterRegexFilter implements CanalEventFilter<String> {
     private static final Comparator<String> COMPARATOR        = new StringComparator();
 
     final private String                    pattern;
-    final private boolean                   defaultEmptyValue;
+    final private boolean                   defaultEmptyValue;//默认返回值
 
     public AviaterRegexFilter(String pattern){
         this(pattern, true);

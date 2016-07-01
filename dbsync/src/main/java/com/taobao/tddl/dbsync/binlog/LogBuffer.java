@@ -16,14 +16,16 @@ import java.util.BitSet;
  */
 public class LogBuffer {
 
-    protected byte[] buffer;
+    protected byte[] buffer;//字节缓冲池
 
-    protected int    origin, limit;
-    protected int    position;
+    //注意origin limit position三个变量其实都是绝对位置,不是某一个文件的相对位置
+    protected int    origin, limit;//origin表示当前的基础位置,limit表示文件已经写到buffer的有效字节数
+    protected int    position;//当前操作到哪个位置了,该位置应该是origin<position<origin+limit
 
     protected LogBuffer(){
     }
 
+    //初始化一个缓冲池
     public LogBuffer(byte[] buffer, final int origin, final int limit){
         if (origin + limit > buffer.length) throw new IllegalArgumentException("capacity excceed: " + (origin + limit));
 
@@ -35,6 +37,8 @@ public class LogBuffer {
 
     /**
      * Return n bytes in this buffer.
+     * 复制buffer的内容,产生新的LogBuffer对象,老的对象依然存在,不变化。
+     * 新的LogBuffer对象是从buffer的origin + pos位置开始读取.读取len个长度组成的
      */
     public final LogBuffer duplicate(final int pos, final int len) {
         if (pos + len > limit) throw new IllegalArgumentException("limit excceed: " + (pos + len));
@@ -47,6 +51,9 @@ public class LogBuffer {
 
     /**
      * Return next n bytes in this buffer.
+     * 复制buffer的内容,产生新的LogBuffer对象,老的对象依然存在,但是少有变化,因为position位置也会跟随变化
+     * 新的LogBuffer对象是从buffer的position位置开始读取.读取len个长度组成的
+     * 并且position位置也会跟随变化
      */
     public final LogBuffer duplicate(final int len) {
         if (position + len > origin + limit) throw new IllegalArgumentException("limit excceed: "
@@ -62,6 +69,7 @@ public class LogBuffer {
 
     /**
      * Return next n bytes in this buffer.
+     * 赋值全部buffer的内容,产生新的LogBuffer对象,老的对象依然存在,并且没有变化
      */
     public final LogBuffer duplicate() {
         // XXX: Do momery copy avoid buffer modified.
@@ -73,6 +81,7 @@ public class LogBuffer {
      * Returns this buffer's capacity. </p>
      * 
      * @return The capacity of this buffer
+     * 返回buffer缓冲数组中的容量
      */
     public final int capacity() {
         return buffer.length;
@@ -82,6 +91,7 @@ public class LogBuffer {
      * Returns this buffer's position. </p>
      * 
      * @return The position of this buffer
+     * 该位置是在当前缓冲池中的位置,即属于相对位置
      */
     public final int position() {
         return position - origin;
@@ -96,6 +106,7 @@ public class LogBuffer {
      * @return This buffer
      * @throws IllegalArgumentException If the preconditions on
      * <tt>newPosition</tt> do not hold
+     * 重新定义位置,该位置参数是相对位置
      */
     public final LogBuffer position(final int newPosition) {
         if (newPosition > limit || newPosition < 0) throw new IllegalArgumentException("limit excceed: " + newPosition);
@@ -109,6 +120,7 @@ public class LogBuffer {
      * 
      * @param len The forward distance
      * @return This buffer
+     * 将position移动len个位置
      */
     public final LogBuffer forward(final int len) {
         if (position + len > origin + limit) throw new IllegalArgumentException("limit excceed: "
@@ -123,14 +135,16 @@ public class LogBuffer {
      * 
      * @param len The consume distance
      * @return This buffer
+     * 消费N个字节,因此buffer的长度就会减少N个字节
+     * 1.
      */
     public final LogBuffer consume(final int len) {
-        if (limit > len) {
-            limit -= len;
-            origin += len;
-            position = origin;
+        if (limit > len) {//说明总长度已经超过了等待消费的字节数,
+            limit -= len;//总长度减少
+            origin += len;//起始位置前移动.因为这部分数据已经被消费掉了,没意义了,后续需要字节空间的可以用这部分空间
+            position = origin;//位置重新移动到原始位置上
             return this;
-        } else if (limit == len) {
+        } else if (limit == len) {//说明全部要被消费掉
             limit = 0;
             origin = 0;
             position = 0;
@@ -145,6 +159,7 @@ public class LogBuffer {
      * Rewinds this buffer. The position is set to zero.
      * 
      * @return This buffer
+     * 表示从头开始读取数据,即将position当前位置设置成origin基础位置
      */
     public final LogBuffer rewind() {
         position = origin;
@@ -155,6 +170,7 @@ public class LogBuffer {
      * Returns this buffer's limit. </p>
      * 
      * @return The limit of this buffer
+     * 返回当前buffer的最后字节位置
      */
     public final int limit() {
         return limit;
@@ -170,6 +186,7 @@ public class LogBuffer {
      * @return This buffer
      * @throws IllegalArgumentException If the preconditions on <tt>newLimit</tt>
      * do not hold
+     * 拦腰截断buffer内容.将buffer有效的内容最后位置重新设置成newLimit
      */
     public final LogBuffer limit(int newLimit) {
         if (origin + newLimit > buffer.length || newLimit < 0) throw new IllegalArgumentException("capacity excceed: "
@@ -184,6 +201,7 @@ public class LogBuffer {
      * limit. </p>
      * 
      * @return The number of elements remaining in this buffer
+     * 表示还剩余多少个字节
      */
     public final int remaining() {
         return limit + origin - position;
@@ -195,13 +213,16 @@ public class LogBuffer {
      * 
      * @return <tt>true</tt> if, and only if, there is at least one element
      * remaining in this buffer
+     * true表示还有字节没有读取完
      */
     public final boolean hasRemaining() {
         return position < limit + origin;
     }
 
+    //--------以下代码就是如何从buffer中获取各种int long strring的数据方法了-----------------------
     /**
      * Return 8-bit signed int from buffer.
+     * 在当前文件的位置 前进pos,读取一个byte,转换成int
      */
     public final int getInt8(final int pos) {
         if (pos >= limit || pos < 0) throw new IllegalArgumentException("limit excceed: " + pos);
@@ -211,6 +232,7 @@ public class LogBuffer {
 
     /**
      * Return next 8-bit signed int from buffer.
+     * 读取一个byte,转换成int
      */
     public final int getInt8() {
         if (position >= origin + limit) throw new IllegalArgumentException("limit excceed: " + (position - origin));
@@ -220,8 +242,10 @@ public class LogBuffer {
 
     /**
      * Return 8-bit unsigned int from buffer.
+     * 读取一个byte,转换成int
      */
     public final int getUint8(final int pos) {
+    	//origin + pos表示从当前位置前进几个字节,到达下一个什么位置
         if (pos >= limit || pos < 0) throw new IllegalArgumentException("limit excceed: " + pos);
 
         return 0xff & buffer[origin + pos];
@@ -229,8 +253,10 @@ public class LogBuffer {
 
     /**
      * Return next 8-bit unsigned int from buffer.
+     * 读取下一个byte,转换成int
      */
     public final int getUint8() {
+    	//位置不能超越范围
         if (position >= origin + limit) throw new IllegalArgumentException("limit excceed: " + (position - origin));
 
         return 0xff & buffer[position++];
@@ -240,6 +266,7 @@ public class LogBuffer {
      * Return 16-bit signed int from buffer. (little-endian)
      * 
      * @see mysql-5.1.60/include/my_global.h - sint2korr
+     * 在当前文件的位置 前进pos,读取接下来2个字节,返回int
      */
     public final int getInt16(final int pos) {
         final int position = origin + pos;
@@ -255,6 +282,7 @@ public class LogBuffer {
      * Return next 16-bit signed int from buffer. (little-endian)
      * 
      * @see mysql-5.1.60/include/my_global.h - sint2korr
+     * 读取接下来2个字节,返回int
      */
     public final int getInt16() {
         if (position + 1 >= origin + limit) throw new IllegalArgumentException("limit excceed: "
@@ -268,6 +296,7 @@ public class LogBuffer {
      * Return 16-bit unsigned int from buffer. (little-endian)
      * 
      * @see mysql-5.1.60/include/my_global.h - uint2korr
+     * 在当前文件的位置 前进pos,读取接下来2个字节,返回int
      */
     public final int getUint16(final int pos) {
         final int position = origin + pos;
@@ -283,6 +312,7 @@ public class LogBuffer {
      * Return next 16-bit unsigned int from buffer. (little-endian)
      * 
      * @see mysql-5.1.60/include/my_global.h - uint2korr
+     * 读取接下来2个字节,返回int
      */
     public final int getUint16() {
         if (position + 1 >= origin + limit) throw new IllegalArgumentException("limit excceed: "
@@ -296,6 +326,7 @@ public class LogBuffer {
      * Return 16-bit signed int from buffer. (big-endian)
      * 
      * @see mysql-5.6.10/include/myisampack.h - mi_sint2korr
+     * 在当前文件的位置 前进pos,读取接下来2个字节,返回int
      */
     public final int getBeInt16(final int pos) {
         final int position = origin + pos;
@@ -311,6 +342,7 @@ public class LogBuffer {
      * Return next 16-bit signed int from buffer. (big-endian)
      * 
      * @see mysql-5.1.60/include/my_global.h - mi_sint2korr
+     * 读取接下来2个字节,返回int
      */
     public final int getBeInt16() {
         if (position + 1 >= origin + limit) throw new IllegalArgumentException("limit excceed: "
@@ -324,6 +356,7 @@ public class LogBuffer {
      * Return 16-bit unsigned int from buffer. (big-endian)
      * 
      * @see mysql-5.6.10/include/myisampack.h - mi_usint2korr
+     * 在当前文件的位置 前进pos,读取接下来2个字节,返回int
      */
     public final int getBeUint16(final int pos) {
         final int position = origin + pos;
@@ -339,6 +372,7 @@ public class LogBuffer {
      * Return next 16-bit unsigned int from buffer. (big-endian)
      * 
      * @see mysql-5.6.10/include/myisampack.h - mi_usint2korr
+     * 读取接下来2个字节,返回int
      */
     public final int getBeUint16() {
         if (position + 1 >= origin + limit) throw new IllegalArgumentException("limit excceed: "
@@ -352,6 +386,7 @@ public class LogBuffer {
      * Return 24-bit signed int from buffer. (little-endian)
      * 
      * @see mysql-5.1.60/include/my_global.h - sint3korr
+     * 在当前文件的位置 前进pos,读取接下来3个字节,返回int
      */
     public final int getInt24(final int pos) {
         final int position = origin + pos;
@@ -367,6 +402,7 @@ public class LogBuffer {
      * Return next 24-bit signed int from buffer. (little-endian)
      * 
      * @see mysql-5.1.60/include/my_global.h - sint3korr
+     * 读取接下来3个字节,返回int
      */
     public final int getInt24() {
         if (position + 2 >= origin + limit) throw new IllegalArgumentException("limit excceed: "
@@ -380,6 +416,7 @@ public class LogBuffer {
      * Return 24-bit signed int from buffer. (big-endian)
      * 
      * @see mysql-5.6.10/include/myisampack.h - mi_usint3korr
+     * 在当前文件的位置 前进pos,读取接下来3个字节,返回int
      */
     public final int getBeInt24(final int pos) {
         final int position = origin + pos;
@@ -395,6 +432,7 @@ public class LogBuffer {
      * Return next 24-bit signed int from buffer. (big-endian)
      * 
      * @see mysql-5.6.10/include/myisampack.h - mi_usint3korr
+     * 读取接下来3个字节,返回int
      */
     public final int getBeInt24() {
         if (position + 2 >= origin + limit) throw new IllegalArgumentException("limit excceed: "
@@ -408,6 +446,7 @@ public class LogBuffer {
      * Return 24-bit unsigned int from buffer. (little-endian)
      * 
      * @see mysql-5.1.60/include/my_global.h - uint3korr
+     * 在当前文件的位置 前进pos,读取接下来3个字节,返回int
      */
     public final int getUint24(final int pos) {
         final int position = origin + pos;
@@ -423,6 +462,7 @@ public class LogBuffer {
      * Return next 24-bit unsigned int from buffer. (little-endian)
      * 
      * @see mysql-5.1.60/include/my_global.h - uint3korr
+     * 读取接下来3个字节,返回int
      */
     public final int getUint24() {
         if (position + 2 >= origin + limit) throw new IllegalArgumentException("limit excceed: "
@@ -436,6 +476,7 @@ public class LogBuffer {
      * Return 24-bit unsigned int from buffer. (big-endian)
      * 
      * @see mysql-5.6.10/include/myisampack.h - mi_usint3korr
+     * 在当前文件的位置 前进pos,读取接下来3个字节,返回int
      */
     public final int getBeUint24(final int pos) {
         final int position = origin + pos;
@@ -451,6 +492,7 @@ public class LogBuffer {
      * Return next 24-bit unsigned int from buffer. (big-endian)
      * 
      * @see mysql-5.6.10/include/myisampack.h - mi_usint3korr
+     * 读取接下来3个字节,返回int
      */
     public final int getBeUint24() {
         if (position + 2 >= origin + limit) throw new IllegalArgumentException("limit excceed: "
@@ -464,6 +506,7 @@ public class LogBuffer {
      * Return 32-bit signed int from buffer. (little-endian)
      * 
      * @see mysql-5.1.60/include/my_global.h - sint4korr
+     * 在当前文件的位置 前进pos,读取接下来4个字节,返回int
      */
     public final int getInt32(final int pos) {
         final int position = origin + pos;
@@ -480,6 +523,7 @@ public class LogBuffer {
      * Return 32-bit signed int from buffer. (big-endian)
      * 
      * @see mysql-5.6.10/include/myisampack.h - mi_sint4korr
+     * 读取接下来4个字节,返回int
      */
     public final int getBeInt32(final int pos) {
         final int position = origin + pos;
@@ -496,6 +540,7 @@ public class LogBuffer {
      * Return next 32-bit signed int from buffer. (little-endian)
      * 
      * @see mysql-5.1.60/include/my_global.h - sint4korr
+     * 读取接下来4个字节,返回int
      */
     public final int getInt32() {
         if (position + 3 >= origin + limit) throw new IllegalArgumentException("limit excceed: "
@@ -510,6 +555,7 @@ public class LogBuffer {
      * Return next 32-bit signed int from buffer. (big-endian)
      * 
      * @see mysql-5.6.10/include/myisampack.h - mi_sint4korr
+     * 读取接下来4个字节,返回int
      */
     public final int getBeInt32() {
         if (position + 3 >= origin + limit) throw new IllegalArgumentException("limit excceed: "
@@ -524,13 +570,16 @@ public class LogBuffer {
      * Return 32-bit unsigned int from buffer. (little-endian)
      * 
      * @see mysql-5.1.60/include/my_global.h - uint4korr
+     * 在当前文件的位置 前进pos,读取接下来4个字节,返回int
+     * 
      */
     public final long getUint32(final int pos) {
-        final int position = origin + pos;
+        final int position = origin + pos;//表示从当前位置前进几个字节,到达下一个什么位置
 
         if (pos + 3 >= limit || pos < 0) throw new IllegalArgumentException("limit excceed: "
                                                                             + (pos < 0 ? pos : (pos + 3)));
 
+        //从buffer中读取4个字节,组成int返回
         byte[] buf = buffer;
         return ((long) (0xff & buf[position])) | ((long) (0xff & buf[position + 1]) << 8)
                | ((long) (0xff & buf[position + 2]) << 16) | ((long) (0xff & buf[position + 3]) << 24);
@@ -540,6 +589,7 @@ public class LogBuffer {
      * Return 32-bit unsigned int from buffer. (big-endian)
      * 
      * @see mysql-5.6.10/include/myisampack.h - mi_usint4korr
+     * 在当前文件的位置 前进pos,读取接下来4个字节,返回int
      */
     public final long getBeUint32(final int pos) {
         final int position = origin + pos;
@@ -556,6 +606,7 @@ public class LogBuffer {
      * Return next 32-bit unsigned int from buffer. (little-endian)
      * 
      * @see mysql-5.1.60/include/my_global.h - uint4korr
+     * 读取接下来4个字节,返回int
      */
     public final long getUint32() {
         if (position + 3 >= origin + limit) throw new IllegalArgumentException("limit excceed: "
@@ -570,6 +621,7 @@ public class LogBuffer {
      * Return next 32-bit unsigned int from buffer. (big-endian)
      * 
      * @see mysql-5.6.10/include/myisampack.h - mi_uint4korr
+     * 读取接下来4个字节,返回int
      */
     public final long getBeUint32() {
         if (position + 3 >= origin + limit) throw new IllegalArgumentException("limit excceed: "
@@ -582,6 +634,7 @@ public class LogBuffer {
 
     /**
      * Return 40-bit unsigned int from buffer. (little-endian)
+     * 在当前文件的位置 前进pos,读取接下来5个字节,返回long
      */
     public final long getUlong40(final int pos) {
         final int position = origin + pos;
@@ -597,6 +650,7 @@ public class LogBuffer {
 
     /**
      * Return next 40-bit unsigned int from buffer. (little-endian)
+     * 读取接下来5个字节,返回long
      */
     public final long getUlong40() {
         if (position + 4 >= origin + limit) throw new IllegalArgumentException("limit excceed: "
@@ -629,6 +683,7 @@ public class LogBuffer {
      * Return next 40-bit unsigned int from buffer. (big-endian)
      * 
      * @see mysql-5.6.10/include/myisampack.h - mi_uint5korr
+     * 读取接下来5个字节,返回long
      */
     public final long getBeUlong40() {
         if (position + 4 >= origin + limit) throw new IllegalArgumentException("limit excceed: "
@@ -644,6 +699,7 @@ public class LogBuffer {
      * Return 48-bit signed long from buffer. (little-endian)
      * 
      * @see mysql-5.1.60/include/my_global.h - sint6korr
+     * 在当前文件的位置 前进pos,读取接下来6个字节,返回long
      */
     public final long getLong48(final int pos) {
         final int position = origin + pos;
@@ -661,6 +717,7 @@ public class LogBuffer {
      * Return 48-bit signed long from buffer. (big-endian)
      * 
      * @see mysql-5.6.10/include/myisampack.h - mi_sint6korr
+     * 在当前文件的位置 前进pos,读取接下来6个字节,返回long
      */
     public final long getBeLong48(final int pos) {
         final int position = origin + pos;
@@ -678,6 +735,7 @@ public class LogBuffer {
      * Return next 48-bit signed long from buffer. (little-endian)
      * 
      * @see mysql-5.1.60/include/my_global.h - sint6korr
+     * 读取接下来6个字节,返回long
      */
     public final long getLong48() {
         if (position + 5 >= origin + limit) throw new IllegalArgumentException("limit excceed: "
@@ -693,6 +751,7 @@ public class LogBuffer {
      * Return next 48-bit signed long from buffer. (Big-endian)
      * 
      * @see mysql-5.6.10/include/myisampack.h - mi_sint6korr
+     * 读取接下来6个字节,返回long
      */
     public final long getBeLong48() {
         if (position + 5 >= origin + limit) throw new IllegalArgumentException("limit excceed: "
@@ -770,6 +829,7 @@ public class LogBuffer {
 
     /**
      * Return 56-bit unsigned int from buffer. (little-endian)
+     * 在当前文件的位置 前进pos,读取接下来7个字节,返回long
      */
     public final long getUlong56(final int pos) {
         final int position = origin + pos;
@@ -786,6 +846,7 @@ public class LogBuffer {
 
     /**
      * Return next 56-bit unsigned int from buffer. (little-endian)
+     * 读取接下来7个字节,返回long
      */
     public final long getUlong56() {
         if (position + 6 >= origin + limit) throw new IllegalArgumentException("limit excceed: "
@@ -832,6 +893,7 @@ public class LogBuffer {
      * Return 64-bit signed long from buffer. (little-endian)
      * 
      * @see mysql-5.1.60/include/my_global.h - sint8korr
+     * 在当前文件的位置 前进pos,读取接下来8个字节,返回long
      */
     public final long getLong64(final int pos) {
         final int position = origin + pos;
@@ -850,6 +912,7 @@ public class LogBuffer {
      * Return 64-bit signed long from buffer. (big-endian)
      * 
      * @see mysql-5.6.10/include/myisampack.h - mi_sint8korr
+     * 在当前文件的位置 前进pos,读取接下来8个字节,返回long
      */
     public final long getBeLong64(final int pos) {
         final int position = origin + pos;
@@ -868,6 +931,7 @@ public class LogBuffer {
      * Return next 64-bit signed long from buffer. (little-endian)
      * 
      * @see mysql-5.1.60/include/my_global.h - sint8korr
+     * 读取接下来8个字节,返回long
      */
     public final long getLong64() {
         if (position + 7 >= origin + limit) throw new IllegalArgumentException("limit excceed: "
@@ -884,6 +948,7 @@ public class LogBuffer {
      * Return next 64-bit signed long from buffer. (big-endian)
      * 
      * @see mysql-5.6.10/include/myisampack.h - mi_sint8korr
+     * 读取接下来8个字节,返回long
      */
     public final long getBeLong64() {
         if (position + 7 >= origin + limit) throw new IllegalArgumentException("limit excceed: "
@@ -903,6 +968,7 @@ public class LogBuffer {
      * Return 64-bit unsigned long from buffer. (little-endian)
      * 
      * @see mysql-5.1.60/include/my_global.h - uint8korr
+     * 在当前文件的位置 前进pos,读取接下来8个字节,返回long
      */
     public final BigInteger getUlong64(final int pos) {
         final long long64 = getLong64(pos);
@@ -914,6 +980,7 @@ public class LogBuffer {
      * Return 64-bit unsigned long from buffer. (big-endian)
      * 
      * @see mysql-5.6.10/include/myisampack.h - mi_uint8korr
+     * 在当前文件的位置 前进pos,读取接下来8个字节,返回long
      */
     public final BigInteger getBeUlong64(final int pos) {
         final long long64 = getBeLong64(pos);
@@ -925,6 +992,7 @@ public class LogBuffer {
      * Return next 64-bit unsigned long from buffer. (little-endian)
      * 
      * @see mysql-5.1.60/include/my_global.h - uint8korr
+     * 读取接下来8个字节,返回long
      */
     public final BigInteger getUlong64() {
         final long long64 = getLong64();
@@ -936,6 +1004,7 @@ public class LogBuffer {
      * Return next 64-bit unsigned long from buffer. (big-endian)
      * 
      * @see mysql-5.6.10/include/myisampack.h - mi_uint8korr
+     * 读取接下来8个字节,返回long
      */
     public final BigInteger getBeUlong64() {
         final long long64 = getBeLong64();
@@ -997,6 +1066,7 @@ public class LogBuffer {
      * </ul>
      * That representation allows a first byte value of 251 to represent the SQL
      * NULL value.
+     * 在当前文件的位置 前进pos,读取一个long返回
      */
     public final long getPackedLong(final int pos) {
         final int lead = getUint8(pos);
@@ -1018,6 +1088,7 @@ public class LogBuffer {
      * Return next packed number from buffer. (little-endian)
      * 
      * @see LogBuffer#getPackedLong(int)
+     * 读取一个long返回
      */
     public final long getPackedLong() {
         final int lead = getUint8();
@@ -1520,6 +1591,7 @@ public class LogBuffer {
 
     /**
      * Fill n bytes into output stream.
+     * 将buffer中的内容写入到out中,从buffer的origin + pos开始读取数据,读取len个字节
      */
     public final void fillOutput(OutputStream out, final int pos, final int len) throws IOException {
         if (pos + len > limit || pos < 0) throw new IllegalArgumentException("limit excceed: " + (pos + len));
@@ -1528,7 +1600,8 @@ public class LogBuffer {
     }
 
     /**
-     * Fill next n bytes into output stream.
+     * Fill next n bytes into output stream
+     * 将buffer中的内容写入到out中,从buffer的position开始读取数据,读取len个字节
      */
     public final void fillOutput(OutputStream out, final int len) throws IOException {
         if (position + len > origin + limit) throw new IllegalArgumentException("limit excceed: "
@@ -1540,6 +1613,7 @@ public class LogBuffer {
 
     /**
      * Fill n bytes in this buffer.
+     * 将buffer的origin + pos位置开始复制字节,复制len个字节,复制到dest字节数组中,从dest的destPos位置开始覆盖
      */
     public final void fillBytes(final int pos, byte[] dest, final int destPos, final int len) {
         if (pos + len > limit || pos < 0) throw new IllegalArgumentException("limit excceed: " + (pos + len));
@@ -1549,6 +1623,8 @@ public class LogBuffer {
 
     /**
      * Fill next n bytes in this buffer.
+     * 将buffer的position位置开始复制字节,复制len个字节,复制到dest字节数组中,从dest的destPos位置开始覆盖
+     * 并且position位置会跟随变化
      */
     public final void fillBytes(byte[] dest, final int destPos, final int len) {
         if (position + len > origin + limit) throw new IllegalArgumentException("limit excceed: "
@@ -1560,6 +1636,7 @@ public class LogBuffer {
 
     /**
      * Return n-byte data from buffer.
+     * 将buffer的origin + pos位置开始复制字节,复制len个字节,复制到buf字节数组中
      */
     public final byte[] getData(final int pos, final int len) {
         byte[] buf = new byte[len];
@@ -1569,6 +1646,8 @@ public class LogBuffer {
 
     /**
      * Return next n-byte data from buffer.
+     * 将buffer的position位置开始复制字节,复制len个字节,复制到buf字节数组中
+     * 并且position位置会跟随变化
      */
     public final byte[] getData(final int len) {
         byte[] buf = new byte[len];
@@ -1578,6 +1657,8 @@ public class LogBuffer {
 
     /**
      * Return all remaining data from buffer.
+     * 将buffer的position位置开始复制剩余全部字节,返回全部字节的字节数组
+     * 并且position位置会跟随变化
      */
     public final byte[] getData() {
         return getData(0, limit);

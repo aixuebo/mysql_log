@@ -5,6 +5,7 @@ import org.apache.commons.lang.builder.ToStringBuilder;
 import com.alibaba.otter.canal.common.utils.CanalToStringStyle;
 import com.google.common.base.Preconditions;
 
+//发送包含HeaderPacket的信息,即发送头包
 public abstract class PacketWithHeaderPacket implements IPacket {
 
     protected HeaderPacket header;

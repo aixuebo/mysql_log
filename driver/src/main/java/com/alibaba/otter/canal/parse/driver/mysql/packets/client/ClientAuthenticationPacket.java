@@ -11,6 +11,7 @@ import com.alibaba.otter.canal.parse.driver.mysql.utils.ByteHelper;
 import com.alibaba.otter.canal.parse.driver.mysql.utils.MSC;
 import com.alibaba.otter.canal.parse.driver.mysql.utils.MySQLPasswordEncrypter;
 
+//客户端发送权限命令
 public class ClientAuthenticationPacket extends PacketWithHeaderPacket {
 
     private String username;

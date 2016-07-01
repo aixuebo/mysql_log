@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @author zebin.xuzb 2012-9-20 下午3:47:47
  * @version 1.0.0
+ * 线程的工厂类
  */
 public class NamedThreadFactory implements ThreadFactory {
 

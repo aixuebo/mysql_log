@@ -9,6 +9,7 @@ import com.alibaba.otter.canal.common.utils.CanalToStringStyle;
 /**
  * @author jianghang 2012-6-21 上午10:52:02
  * @version 1.0.0
+ * 记录一个slave节点的ip地址事件
  */
 public class LogIdentity extends Position {
 
