@@ -9,6 +9,7 @@ import com.alibaba.otter.canal.instance.manager.model.Canal;
  * 
  * @author jianghang 2012-7-12 下午05:37:09
  * @version 1.0.0
+ * 如何产生一个实例对象,相当于工程
  */
 public class ManagerCanalInstanceGenerator implements CanalInstanceGenerator {
 

@@ -134,6 +134,7 @@ public class MysqlConnector {
         return connector;
     }
 
+    //发送退出命令
     public void quit() throws IOException {
         QuitCommandPacket quit = new QuitCommandPacket();
         byte[] cmdBody = quit.toBytes();
@@ -142,7 +143,7 @@ public class MysqlConnector {
         quitHeader.setPacketBodyLength(cmdBody.length);
         quitHeader.setPacketSequenceNumber((byte) 0x00);
         PacketManager.write(channel,
-            new ByteBuffer[] { ByteBuffer.wrap(quitHeader.toBytes()), ByteBuffer.wrap(cmdBody) });
+            new ByteBuffer[] { ByteBuffer.wrap(quitHeader.toBytes()), ByteBuffer.wrap(cmdBody) });//发送信息
     }
 
     // ====================== help method ====================
@@ -156,10 +157,11 @@ public class MysqlConnector {
         channel.socket().setSendBufferSize(sendBufferSize);
     }
 
+    //谈判过程,即校验是否能连接上
     private void negotiate(SocketChannel channel) throws IOException {
-        HeaderPacket header = PacketManager.readHeader(channel, 4);
-        byte[] body = PacketManager.readBytes(channel, header.getPacketBodyLength());
-        if (body[0] < 0) {// check field_count
+        HeaderPacket header = PacketManager.readHeader(channel, 4);//读取一个包
+        byte[] body = PacketManager.readBytes(channel, header.getPacketBodyLength());//根据包的长度,读取内容
+        if (body[0] < 0) {// check field_count 说明有错误
             if (body[0] == -1) {
                 ErrorPacket error = new ErrorPacket();
                 error.fromBytes(body);
@@ -176,7 +178,7 @@ public class MysqlConnector {
 
         logger.info("handshake initialization packet received, prepare the client authentication packet to send");
 
-        ClientAuthenticationPacket clientAuth = new ClientAuthenticationPacket();
+        ClientAuthenticationPacket clientAuth = new ClientAuthenticationPacket();//构造客户端要发送的内容
         clientAuth.setCharsetNumber(charsetNumber);
 
         clientAuth.setUsername(username);
@@ -185,20 +187,20 @@ public class MysqlConnector {
         clientAuth.setDatabaseName(defaultSchema);
         clientAuth.setScrumbleBuff(joinAndCreateScrumbleBuff(handshakePacket));
 
-        byte[] clientAuthPkgBody = clientAuth.toBytes();
+        byte[] clientAuthPkgBody = clientAuth.toBytes();//发送字节数
         HeaderPacket h = new HeaderPacket();
         h.setPacketBodyLength(clientAuthPkgBody.length);
-        h.setPacketSequenceNumber((byte) (header.getPacketSequenceNumber() + 1));
+        h.setPacketSequenceNumber((byte) (header.getPacketSequenceNumber() + 1));//设置包头信息
 
         PacketManager.write(channel,
-            new ByteBuffer[] { ByteBuffer.wrap(h.toBytes()), ByteBuffer.wrap(clientAuthPkgBody) });
+            new ByteBuffer[] { ByteBuffer.wrap(h.toBytes()), ByteBuffer.wrap(clientAuthPkgBody) });//发送信息
         logger.info("client authentication packet is sent out.");
 
         // check auth result
         header = null;
-        header = PacketManager.readHeader(channel, 4);
+        header = PacketManager.readHeader(channel, 4);//读取response头部信息
         body = null;
-        body = PacketManager.readBytes(channel, header.getPacketBodyLength());
+        body = PacketManager.readBytes(channel, header.getPacketBodyLength());//读取response内容
         assert body != null;
         if (body[0] < 0) {
             if (body[0] == -1) {

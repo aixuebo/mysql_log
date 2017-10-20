@@ -41,7 +41,7 @@ import com.taobao.tddl.dbsync.binlog.event.LogHeader;
  * </table>
  * - Strings are stored in various formats. The format of each string is
  * documented separately.
- * 
+ * 整数用1 2 3 8个字节来表示,250以内的整数就一个字节表示,252表示2个字节表示的整数,253表示三个字节,254表示8个字节表示的整数
  * @see mysql-5.1.60/sql/log_event.h
  * @author <a href="mailto:changyuan.lh@taobao.com">Changyuan.lh</a>
  * @version 1.0
@@ -88,10 +88,10 @@ public abstract class LogEvent {
     // where 5.0 differs: 2 for len of N-bytes vars.
     public static final int    QUERY_HEADER_LEN                         = (QUERY_HEADER_MINIMAL_LEN + 2);
 
-    /* Enumeration type for the different types of log events. */
+    /* Enumeration type for the different types of log events. 不同的事件类型*/
     public static final int    UNKNOWN_EVENT                            = 0;
     public static final int    START_EVENT_V3                           = 1;
-    public static final int    QUERY_EVENT                              = 2;
+    public static final int    QUERY_EVENT                              = 2;//查询事件
     public static final int    STOP_EVENT                               = 3;
     public static final int    ROTATE_EVENT                             = 4;
     public static final int    INTVAR_EVENT                             = 5;
@@ -278,6 +278,7 @@ public abstract class LogEvent {
     public static final int    MYSQL_TYPE_STRING                        = 254;
     public static final int    MYSQL_TYPE_GEOMETRY                      = 255;
 
+    //将整数的事件类型,转换成可以理解的字符串类型
     public static String getTypeName(final int type) {
         switch (type) {
             case START_EVENT_V3:

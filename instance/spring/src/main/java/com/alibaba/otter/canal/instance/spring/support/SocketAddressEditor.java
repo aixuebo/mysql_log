@@ -9,6 +9,7 @@ import org.springframework.beans.PropertyEditorRegistry;
 
 /**
  * spring用于一个参数,该参数是由ip:port组成的,将其解析称InetSocketAddress对象
+ * 将ip:port形式的字符串转换成InetSocketAddress对象
  */
 public class SocketAddressEditor extends PropertyEditorSupport implements PropertyEditorRegistrar {
 
@@ -17,7 +18,7 @@ public class SocketAddressEditor extends PropertyEditorSupport implements Proper
     }
 
     public void setAsText(String text) throws IllegalArgumentException {
-        String[] addresses = StringUtils.split(text, ":");
+        String[] addresses = StringUtils.split(text, ":");//按照:拆分地址信息 ip:port
         if (addresses.length > 0) {
             if (addresses.length != 2) {
                 throw new RuntimeException("address[" + text + "] is illegal, eg.127.0.0.1:3306");

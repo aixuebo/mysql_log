@@ -10,6 +10,7 @@ import java.io.IOException;
  * 网络包的抽象类,
  * @author fujohnwang
  * @see 1.0
+ * 相当于序列化与反序列化的过程
  */
 public interface IPacket {
 

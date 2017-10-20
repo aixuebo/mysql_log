@@ -62,6 +62,7 @@ public class CanalServerWithEmbedded extends AbstractCanalLifeCycle implements C
         if (!isStart()) {
             super.start();
 
+            //创建一个Map,key是String,value是CanalInstance
             canalInstances = MigrateMap.makeComputingMap(new Function<String, CanalInstance>() {
 
                 public CanalInstance apply(String destination) {
@@ -73,11 +74,12 @@ public class CanalServerWithEmbedded extends AbstractCanalLifeCycle implements C
         }
     }
 
+    //停止所有的实例
     public void stop() {
         super.stop();
         for (Map.Entry<String, CanalInstance> entry : canalInstances.entrySet()) {
             try {
-                CanalInstance instance = entry.getValue();
+                CanalInstance instance = entry.getValue();//循环所有的实例,进行停止每一个实例
                 if (instance.isStart()) {
                     try {
                         String destination = entry.getKey();
@@ -94,8 +96,9 @@ public class CanalServerWithEmbedded extends AbstractCanalLifeCycle implements C
         }
     }
 
+    //开启一个实例
     public void start(final String destination) {
-        final CanalInstance canalInstance = canalInstances.get(destination);
+        final CanalInstance canalInstance = canalInstances.get(destination);//获取该name对应的实例
         if (!canalInstance.isStart()) {
             try {
                 MDC.put("destination", destination);
@@ -107,6 +110,7 @@ public class CanalServerWithEmbedded extends AbstractCanalLifeCycle implements C
         }
     }
 
+    //停止一个实例
     public void stop(String destination) {
         CanalInstance canalInstance = canalInstances.remove(destination);
         if (canalInstance != null) {
@@ -122,6 +126,7 @@ public class CanalServerWithEmbedded extends AbstractCanalLifeCycle implements C
         }
     }
 
+    //true表示该实例已经打开
     public boolean isStart(String destination) {
         return canalInstances.containsKey(destination) && canalInstances.get(destination).isStart();
     }

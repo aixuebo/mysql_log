@@ -51,7 +51,7 @@ public final class DirectLogFetcher extends LogFetcher {
     public static final int    PACKET_LEN_OFFSET               = 0;//body大小的位置
     public static final int    PACKET_SEQ_OFFSET               = 3;//记录包序号的位置
 
-    /** Maximum packet length */
+    /** Maximum packet length 一个包最大的长度*/
     public static final int    MAX_PACKET_LENGTH               = (256 * 256 * 256 - 1);
 
     /** BINLOG_DUMP options */
@@ -304,14 +304,14 @@ public final class DirectLogFetcher extends LogFetcher {
             //读取body大小和bao序号
             int netlen = getUint24(PACKET_LEN_OFFSET);
             int netnum = getUint8(PACKET_SEQ_OFFSET);
-            if (!fetch0(NET_HEADER_SIZE, netlen)) {//抓去body大小的内容,
+            if (!fetch0(NET_HEADER_SIZE, netlen)) {//抓去body大小的内容,并且内容追加在第5个字节位置
                 logger.warn("Reached end of input stream: packet #" + netnum + ", len = " + netlen);
                 return false;
             }
 
-            // Detecting error code.
-            final int mark = getUint8(NET_HEADER_SIZE);
-            if (mark != 0) {
+            // Detecting error code.发现错误编码
+            final int mark = getUint8(NET_HEADER_SIZE);//获取拿到的body内容
+            if (mark != 0) {//正常情况下,返回的编码应该是0,不是0,说明有异常
                 if (mark == 255) // error from master
                 {
                     // Indicates an error, for example trying to fetch from
@@ -336,21 +336,22 @@ public final class DirectLogFetcher extends LogFetcher {
             }
 
             // The first packet is a multi-packet, concatenate the packets.
-            while (netlen == MAX_PACKET_LENGTH) {
-                if (!fetch0(0, NET_HEADER_SIZE)) {
+            while (netlen == MAX_PACKET_LENGTH) {//等于最大包文件大小,因此说明是多个包组成的一个包
+                if (!fetch0(0, NET_HEADER_SIZE)) {//抓包头文件
                     logger.warn("Reached end of input stream while fetching header");
                     return false;
                 }
 
                 netlen = getUint24(PACKET_LEN_OFFSET);
                 netnum = getUint8(PACKET_SEQ_OFFSET);
-                if (!fetch0(limit, netlen)) {
+                if (!fetch0(limit, netlen)) {//抓body文件
                     logger.warn("Reached end of input stream: packet #" + netnum + ", len = " + netlen);
                     return false;
                 }
             }
 
             // Preparing buffer variables to decoding.
+            //跳过包的头文件位置
             origin = NET_HEADER_SIZE + 1;
             position = origin;
             limit -= origin;

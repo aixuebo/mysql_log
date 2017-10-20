@@ -23,11 +23,11 @@ public class CanalLauncher {
         try {
             String conf = System.getProperty("canal.conf", "classpath:canal.properties");
             Properties properties = new Properties();
-            if (conf.startsWith(CLASSPATH_URL_PREFIX)) {
-                conf = StringUtils.substringAfter(conf, CLASSPATH_URL_PREFIX);
+            if (conf.startsWith(CLASSPATH_URL_PREFIX)) {//说明是以classpath开头的,即通过classpath加载数据
+                conf = StringUtils.substringAfter(conf, CLASSPATH_URL_PREFIX);//截取classpath:后面的内容
                 properties.load(CanalLauncher.class.getClassLoader().getResourceAsStream(conf));
             } else {
-                properties.load(new FileInputStream(conf));
+                properties.load(new FileInputStream(conf));//通过绝对路径加载数据
             }
 
             logger.info("## start the canal server.");

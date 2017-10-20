@@ -27,6 +27,7 @@ import java.util.List;
  * Author: yinxiu
  * Date: 2016-01-07
  * Time: 22:26
+ * Canal实例的抽象实现类
  */
 public class AbstractCanalInstance extends AbstractCanalLifeCycle implements CanalInstance {
 

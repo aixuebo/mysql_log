@@ -12,6 +12,7 @@ import com.alibaba.otter.canal.parse.driver.mysql.utils.MSC;
 import com.alibaba.otter.canal.parse.driver.mysql.utils.MySQLPasswordEncrypter;
 
 //客户端发送权限命令
+//该对象属于客户端要发送给mysql用于鉴权的信息
 public class ClientAuthenticationPacket extends PacketWithHeaderPacket {
 
     private String username;

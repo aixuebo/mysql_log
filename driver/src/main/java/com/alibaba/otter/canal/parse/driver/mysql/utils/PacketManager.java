@@ -67,7 +67,7 @@ public abstract class PacketManager {
 
     //将body的内容发送出去
     public static void write(SocketChannel ch, byte[] body, byte packetSeqNumber) throws IOException {
-        HeaderPacket header = new HeaderPacket();
+        HeaderPacket header = new HeaderPacket();//设置请求包头
         header.setPacketBodyLength(body.length);
         header.setPacketSequenceNumber(packetSeqNumber);
         write(ch, new ByteBuffer[] { ByteBuffer.wrap(header.toBytes()), ByteBuffer.wrap(body) });

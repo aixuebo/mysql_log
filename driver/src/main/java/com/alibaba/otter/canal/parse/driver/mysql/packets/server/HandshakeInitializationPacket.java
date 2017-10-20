@@ -46,6 +46,7 @@ public class HandshakeInitializationPacket extends PacketWithHeaderPacket {
      *  13                           (filler) always 0x00 ...
      *  13                           rest of scramble_buff (4.1)
      * </pre>
+     * mysql发送回来的内容,当连接请求到mysql后,mysql就会返回数据
      */
     public void fromBytes(byte[] data) {
         int index = 0;

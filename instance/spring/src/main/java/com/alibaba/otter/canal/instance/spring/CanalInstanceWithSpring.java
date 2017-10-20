@@ -20,6 +20,7 @@ import com.alibaba.otter.canal.store.model.Event;
  * @author jianghang 2012-7-12 下午01:21:26
  * @author zebin.xuzb
  * @version 1.0.0
+ * 代表spring中的一个实例对象
  */
 public class CanalInstanceWithSpring extends AbstractCanalInstance {
 
@@ -31,7 +32,7 @@ public class CanalInstanceWithSpring extends AbstractCanalInstance {
     }
 
     // ======== setter ========
-
+   //使用spring的依赖注入的方式,注入N多个属性
     public void setDestination(String destination) {
         this.destination = destination;
     }

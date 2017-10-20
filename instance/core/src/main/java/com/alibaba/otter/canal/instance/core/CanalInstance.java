@@ -13,9 +13,11 @@ import com.alibaba.otter.canal.store.CanalEventStore;
  * 
  * @author jianghang 2012-7-12 下午12:04:58
  * @version 1.0.0
+ * 定义一个Canal实例对象的接口
  */
 public interface CanalInstance extends CanalLifeCycle {
 
+    //实例的name
     String getDestination();
 
     CanalEventParser getEventParser();

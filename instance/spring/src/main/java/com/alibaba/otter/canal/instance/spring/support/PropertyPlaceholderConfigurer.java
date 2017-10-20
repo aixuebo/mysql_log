@@ -43,7 +43,7 @@ public class PropertyPlaceholderConfigurer extends org.springframework.beans.fac
 
         if (locationNames != null) {
             for (int i = 0; i < locationNames.length; i++) {
-                locationNames[i] = resolveSystemPropertyPlaceholders(locationNames[i]);
+                locationNames[i] = resolveSystemPropertyPlaceholders(locationNames[i]);//替换成具体的值
             }
         }
 
@@ -62,21 +62,22 @@ public class PropertyPlaceholderConfigurer extends org.springframework.beans.fac
         }
     }
 
+    //将${}内容替换成具体的值
     private String resolveSystemPropertyPlaceholders(String text) {
         StringBuilder buf = new StringBuilder(text);
 
-        for (int startIndex = buf.indexOf(PLACEHOLDER_PREFIX); startIndex >= 0;) {
-            int endIndex = buf.indexOf(PLACEHOLDER_SUFFIX, startIndex + PLACEHOLDER_PREFIX.length());
+        for (int startIndex = buf.indexOf(PLACEHOLDER_PREFIX); startIndex >= 0;) {//从${位置开始循环
+            int endIndex = buf.indexOf(PLACEHOLDER_SUFFIX, startIndex + PLACEHOLDER_PREFIX.length());//找到}位置
 
             if (endIndex != -1) {
-                String placeholder = buf.substring(startIndex + PLACEHOLDER_PREFIX.length(), endIndex);
+                String placeholder = buf.substring(startIndex + PLACEHOLDER_PREFIX.length(), endIndex);//找到${}之间的内容
                 int nextIndex = endIndex + PLACEHOLDER_SUFFIX.length();
 
                 try {
-                    String value = resolveSystemPropertyPlaceholder(placeholder);
+                    String value = resolveSystemPropertyPlaceholder(placeholder);//替换成具体的value值
 
                     if (value != null) {
-                        buf.replace(startIndex, endIndex + PLACEHOLDER_SUFFIX.length(), value);
+                        buf.replace(startIndex, endIndex + PLACEHOLDER_SUFFIX.length(), value);//将${}的内容替换成value
                         nextIndex = startIndex + value.length();
                     } else {
                         System.err.println("Could not resolve placeholder '"
@@ -99,6 +100,7 @@ public class PropertyPlaceholderConfigurer extends org.springframework.beans.fac
         return buf.toString();
     }
 
+    //从系统中找到key对应的值,然后返回
     private String resolveSystemPropertyPlaceholder(String placeholder) {
         DefaultablePlaceholder dp = new DefaultablePlaceholder(placeholder);
         String value = System.getProperty(dp.placeholder);
@@ -126,10 +128,11 @@ public class PropertyPlaceholderConfigurer extends org.springframework.beans.fac
         return trimToEmpty(value);
     }
 
+    //demo ${key:default},将key:default拆分成key和default,后者表示默认值,前者表示要去环境中替换成具体的值
     private static class DefaultablePlaceholder {
 
-        private final String defaultValue;
-        private final String placeholder;
+        private final String defaultValue;//默认值
+        private final String placeholder;//key要被替换的值
 
         public DefaultablePlaceholder(String placeholder){
             int commaIndex = placeholder.indexOf(":");
@@ -145,6 +148,7 @@ public class PropertyPlaceholderConfigurer extends org.springframework.beans.fac
         }
     }
 
+    //将空字符串转换成null
     private String trimToNull(String str) {
         if (str == null) {
             return null;
@@ -159,6 +163,7 @@ public class PropertyPlaceholderConfigurer extends org.springframework.beans.fac
         return result;
     }
 
+    //将空字符串转换成""
     public static String trimToEmpty(String str) {
         if (str == null) {
             return "";

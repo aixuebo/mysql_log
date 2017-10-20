@@ -24,7 +24,7 @@ public final class FormatDescriptionLogEvent extends StartLogEventV3 {
     public static final int   ST_COMMON_HEADER_LEN_OFFSET         = (ST_SERVER_VER_OFFSET + ST_SERVER_VER_LEN + 4);
 
     public static final int   OLD_HEADER_LEN                      = 13;
-    public static final int   LOG_EVENT_HEADER_LEN                = 19;
+    public static final int   LOG_EVENT_HEADER_LEN                = 19;//事件头文件所占用字节长度
     public static final int   LOG_EVENT_MINIMAL_HEADER_LEN        = 19;
 
     /* event-specific post-header sizes */

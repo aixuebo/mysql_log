@@ -20,11 +20,13 @@ public class QuitCommandPacket extends CommandPacket {
         setCommand((byte) 0x01);
     }
 
+    //因为不需要收到信息.因此不需要该方法的实现
     @Override
     public void fromBytes(byte[] data) throws IOException {
 
     }
 
+    //发出去的命令字节数组
     @Override
     public byte[] toBytes() throws IOException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();

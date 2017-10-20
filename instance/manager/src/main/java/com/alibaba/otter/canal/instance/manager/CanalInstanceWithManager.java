@@ -56,6 +56,7 @@ import com.alibaba.otter.canal.store.model.BatchMode;
  * 
  * @author jianghang 2012-7-11 下午09:26:51
  * @version 1.0.0
+ * 具体的实例对象
  */
 public class CanalInstanceWithManager extends AbstractCanalInstance {
 

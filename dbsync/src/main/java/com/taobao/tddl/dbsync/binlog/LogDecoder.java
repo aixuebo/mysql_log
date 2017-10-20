@@ -84,23 +84,23 @@ public final class LogDecoder {
 
     /**
      * Decoding an event from binary-log buffer.
-     * 
+     * 从二进制中解析一个事件
      * @return <code>UknownLogEvent</code> if event type is unknown or skipped,
      * <code>null</code> if buffer is not including a full event.
      */
     public LogEvent decode(LogBuffer buffer, LogContext context) throws IOException {
         final int limit = buffer.limit();
 
-        if (limit >= FormatDescriptionLogEvent.LOG_EVENT_HEADER_LEN) {
+        if (limit >= FormatDescriptionLogEvent.LOG_EVENT_HEADER_LEN) {//必须有这么多字节可用,否则不能组织成事件对象
             LogHeader header = new LogHeader(buffer, context.getFormatDescription());
 
-            final int len = header.getEventLen();
+            final int len = header.getEventLen();//事件长度
             if (limit >= len) {
                 LogEvent event;
 
                 /* Checking binary-log's header */
                 if (handleSet.get(header.getType())) {
-                    buffer.limit(len);
+                    buffer.limit(len);//将buffer的limit有效字节位置设置为跟该事件有关系的字节数
                     try {
                         /* Decoding binary-log to event */
                         event = decode(buffer, header, context);
@@ -109,9 +109,9 @@ public final class LogDecoder {
                                                                 + " failed from: " + context.getLogPosition(), e);
                         throw e;
                     } finally {
-                        buffer.limit(limit); /* Restore limit */
+                        buffer.limit(limit); /* Restore limit 恢复buffer的有效字节位置*/
                     }
-                } else {
+                } else {//说明是为止的事件类型
                     /* Ignore unsupported binary-log. */
                     event = new UnknownLogEvent(header);
                 }
@@ -131,6 +131,7 @@ public final class LogDecoder {
      * Deserialize an event from buffer.
      * 
      * @return <code>UknownLogEvent</code> if event type is unknown or skipped.
+     * 解析一个事件log
      */
     public static LogEvent decode(LogBuffer buffer, LogHeader header, LogContext context) throws IOException {
         FormatDescriptionLogEvent descriptionEvent = context.getFormatDescription();

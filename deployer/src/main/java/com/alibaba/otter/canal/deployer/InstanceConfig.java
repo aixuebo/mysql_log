@@ -12,8 +12,8 @@ import com.alibaba.otter.canal.common.utils.CanalToStringStyle;
  */
 public class InstanceConfig {
 
-    private InstanceConfig globalConfig;
-    private InstanceMode   mode;
+    private InstanceConfig globalConfig;//全局的配置信息
+    private InstanceMode   mode;//spring还是manager模式加载实例
     private Boolean        lazy;
     private String         managerAddress;
     private String         springXml;
