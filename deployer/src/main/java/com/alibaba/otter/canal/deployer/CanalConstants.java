@@ -17,13 +17,13 @@ public class CanalConstants {
     public static final String CANAL_PORT                        = ROOT + "." + "port";
     public static final String CANAL_ZKSERVERS                   = ROOT + "." + "zkServers";
 
-    public static final String CANAL_DESTINATIONS                = ROOT + "." + "destinations";
+    public static final String CANAL_DESTINATIONS                = ROOT + "." + "destinations";//canal.destinations  所有的目的集合,用逗号拆分
     public static final String CANAL_AUTO_SCAN                   = ROOT + "." + "auto.scan";
     public static final String CANAL_AUTO_SCAN_INTERVAL          = ROOT + "." + "auto.scan.interval";
     public static final String CANAL_CONF_DIR                    = ROOT + "." + "conf.dir";
 
-    public static final String CANAL_DESTINATION_SPLIT           = ",";
-    public static final String GLOBAL_NAME                       = "global";
+    public static final String CANAL_DESTINATION_SPLIT           = ",";//拆分符号
+    public static final String GLOBAL_NAME                       = "global";//全局的destination的name
 
     public static final String INSTANCE_MODE_TEMPLATE            = ROOT + "." + "instance.{0}.mode";
     public static final String INSTANCE_LAZY_TEMPLATE            = ROOT + "." + "instance.{0}.lazy";
@@ -32,6 +32,7 @@ public class CanalConstants {
 
     public static final String CANAL_DESTINATION_PROPERTY        = ROOT + ".instance.destination";
 
+    //替换canal.instance.{destination}.mode对应的值
     public static String getInstanceModeKey(String destination) {
         return MessageFormat.format(INSTANCE_MODE_TEMPLATE, destination);
     }

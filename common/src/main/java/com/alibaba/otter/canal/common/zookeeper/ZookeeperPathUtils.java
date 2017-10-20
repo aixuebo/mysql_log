@@ -33,12 +33,12 @@ public class ZookeeperPathUtils {
 
     public static final String ZOOKEEPER_SEPARATOR                          = "/";
 
-    public static final String OTTER_ROOT_NODE                              = ZOOKEEPER_SEPARATOR + "otter";
+    public static final String OTTER_ROOT_NODE                              = ZOOKEEPER_SEPARATOR + "otter";// /otter
 
-    public static final String CANAL_ROOT_NODE                              = OTTER_ROOT_NODE + ZOOKEEPER_SEPARATOR
+    public static final String CANAL_ROOT_NODE                              = OTTER_ROOT_NODE + ZOOKEEPER_SEPARATOR // /otter/canal
                                                                               + "canal";
 
-    public static final String DESTINATION_ROOT_NODE                        = CANAL_ROOT_NODE + ZOOKEEPER_SEPARATOR
+    public static final String DESTINATION_ROOT_NODE                        = CANAL_ROOT_NODE + ZOOKEEPER_SEPARATOR  // /otter/canal/destinations
                                                                               + "destinations";
 
     public static final String FILTER_NODE                                  = "filter";
@@ -54,54 +54,55 @@ public class ZookeeperPathUtils {
     public static final String CLUSTER_NODE                                 = "cluster";
 
     public static final String DESTINATION_NODE                             = DESTINATION_ROOT_NODE
-                                                                              + ZOOKEEPER_SEPARATOR + "{0}";
+                                                                              + ZOOKEEPER_SEPARATOR + "{0}";// /otter/canal/destinations/{0}
 
     public static final String DESTINATION_PARSE_NODE                       = DESTINATION_NODE + ZOOKEEPER_SEPARATOR
-                                                                              + PARSE_NODE;
+                                                                              + PARSE_NODE;// /otter/canal/destinations/{0}/parse
 
     public static final String DESTINATION_CLIENTID_NODE                    = DESTINATION_NODE + ZOOKEEPER_SEPARATOR
-                                                                              + "{1}";
+                                                                              + "{1}";// /otter/canal/destinations/{0}/{1}
 
     public static final String DESTINATION_CURSOR_NODE                      = DESTINATION_CLIENTID_NODE
-                                                                              + ZOOKEEPER_SEPARATOR + CURSOR_NODE;
+                                                                              + ZOOKEEPER_SEPARATOR + CURSOR_NODE;// /otter/canal/destinations/{0}/{1}/cursor
 
     public static final String DESTINATION_CLIENTID_FILTER_NODE             = DESTINATION_CLIENTID_NODE
-                                                                              + ZOOKEEPER_SEPARATOR + FILTER_NODE;
+                                                                              + ZOOKEEPER_SEPARATOR + FILTER_NODE;// /otter/canal/destinations/{0}/{1}/filter
 
     public static final String DESTINATION_CLIENTID_BATCH_MARK_NODE         = DESTINATION_CLIENTID_NODE
-                                                                              + ZOOKEEPER_SEPARATOR + BATCH_MARK_NODE;
+                                                                              + ZOOKEEPER_SEPARATOR + BATCH_MARK_NODE;// /otter/canal/destinations/{0}/{1}/mark
 
     public static final String DESTINATION_CLIENTID_BATCH_MARK_WITH_ID_PATH = DESTINATION_CLIENTID_BATCH_MARK_NODE
-                                                                              + ZOOKEEPER_SEPARATOR + "{2}";
+                                                                              + ZOOKEEPER_SEPARATOR + "{2}"; // /otter/canal/destinations/{0}/{1}/mark/{2}
 
     /**
      * 服务端当前正在提供服务的running节点
      */
     public static final String DESTINATION_RUNNING_NODE                     = DESTINATION_NODE + ZOOKEEPER_SEPARATOR
-                                                                              + RUNNING_NODE;
+                                                                              + RUNNING_NODE;//  /otter/canal/destinations/{0}/running
 
     /**
      * 客户端当前正在工作的running节点
      */
     public static final String DESTINATION_CLIENTID_RUNNING_NODE            = DESTINATION_CLIENTID_NODE
-                                                                              + ZOOKEEPER_SEPARATOR + RUNNING_NODE;
+                                                                              + ZOOKEEPER_SEPARATOR + RUNNING_NODE; // /otter/canal/destinations/{0}/{1}/running
 
     /**
      * 整个canal server的集群列表
      */
     public static final String CANAL_CLUSTER_ROOT_NODE                      = CANAL_ROOT_NODE + ZOOKEEPER_SEPARATOR
-                                                                              + CLUSTER_NODE;
+                                                                              + CLUSTER_NODE;// /otter/canal/cluster
 
+    //存储ip:port信息,表示集群中的一个节点
     public static final String CANAL_CLUSTER_NODE                           = CANAL_CLUSTER_ROOT_NODE
-                                                                              + ZOOKEEPER_SEPARATOR + "{0}";
+                                                                              + ZOOKEEPER_SEPARATOR + "{0}"; // /otter/canal/cluster/{0}
 
     /**
      * 针对某个destination的工作的集群列表
      */
     public static final String DESTINATION_CLUSTER_ROOT                     = DESTINATION_NODE + ZOOKEEPER_SEPARATOR
-                                                                              + CLUSTER_NODE;
+                                                                              + CLUSTER_NODE;// /otter/canal/destinations/{0}
     public static final String DESTINATION_CLUSTER_NODE                     = DESTINATION_CLUSTER_ROOT
-                                                                              + ZOOKEEPER_SEPARATOR + "{1}";
+                                                                              + ZOOKEEPER_SEPARATOR + "{1}";//  /otter/canal/destinations/{0}/{1}
 
     public static String getDestinationPath(String destinationName) {
         return MessageFormat.format(DESTINATION_NODE, destinationName);

@@ -53,8 +53,8 @@ public class CanalController {
     private String                                   ip;
     private int                                      port;
     // 默认使用spring的方式载入
-    private Map<String, InstanceConfig>              instanceConfigs;
-    private InstanceConfig                           globalInstanceConfig;
+    private Map<String, InstanceConfig>              instanceConfigs;//每一个destination对应一个配置信息
+    private InstanceConfig                           globalInstanceConfig;//全局的配置信息
     private Map<String, CanalConfigClient>           managerClients;
     // 监听instance config的变化
     private boolean                                  autoScan = true;
@@ -251,12 +251,12 @@ public class CanalController {
 
     private InstanceConfig initGlobalConfig(Properties properties) {
         InstanceConfig globalConfig = new InstanceConfig();
-        String modeStr = getProperty(properties, CanalConstants.getInstanceModeKey(CanalConstants.GLOBAL_NAME));
+        String modeStr = getProperty(properties, CanalConstants.getInstanceModeKey(CanalConstants.GLOBAL_NAME));//获取glob的mode
         if (StringUtils.isNotEmpty(modeStr)) {
             globalConfig.setMode(InstanceMode.valueOf(StringUtils.upperCase(modeStr)));
         }
 
-        String lazyStr = getProperty(properties, CanalConstants.getInstancLazyKey(CanalConstants.GLOBAL_NAME));
+        String lazyStr = getProperty(properties, CanalConstants.getInstancLazyKey(CanalConstants.GLOBAL_NAME));//设置glob的lazy
         if (StringUtils.isNotEmpty(lazyStr)) {
             globalConfig.setLazy(Boolean.valueOf(lazyStr));
         }
@@ -280,17 +280,17 @@ public class CanalController {
                     throw new CanalServerException("can't find destination:{}");
                 }
 
-                if (config.getMode().isManager()) {
+                if (config.getMode().isManager()) {//说明是manager模式
                     ManagerCanalInstanceGenerator instanceGenerator = new ManagerCanalInstanceGenerator();
                     instanceGenerator.setCanalConfigClient(managerClients.get(config.getManagerAddress()));
                     return instanceGenerator.generate(destination);
-                } else if (config.getMode().isSpring()) {
+                } else if (config.getMode().isSpring()) {//说明是spring模式
                     SpringCanalInstanceGenerator instanceGenerator = new SpringCanalInstanceGenerator();
                     synchronized (this) {
                         try {
                             // 设置当前正在加载的通道，加载spring查找文件时会用到该变量
-                            System.setProperty(CanalConstants.CANAL_DESTINATION_PROPERTY, destination);
-                            instanceGenerator.setBeanFactory(getBeanFactory(config.getSpringXml()));
+                            System.setProperty(CanalConstants.CANAL_DESTINATION_PROPERTY, destination);//临时设置环境为destination去设置srping信息
+                            instanceGenerator.setBeanFactory(getBeanFactory(config.getSpringXml()));//加载srping配置文件
                             return instanceGenerator.generate(destination);
                         } catch (Throwable e) {
                             logger.error("generator instance failed.", e);
@@ -314,17 +314,19 @@ public class CanalController {
         return new CanalConfigClient();
     }
 
+    //加载spring
     private BeanFactory getBeanFactory(String springXml) {
         ApplicationContext applicationContext = new ClassPathXmlApplicationContext(springXml);
         return applicationContext;
     }
 
+    //初始化每一个目的的配置
     private void initInstanceConfig(Properties properties) {
-        String destinationStr = getProperty(properties, CanalConstants.CANAL_DESTINATIONS);
+        String destinationStr = getProperty(properties, CanalConstants.CANAL_DESTINATIONS);//获取所有的目的地址集合
         String[] destinations = StringUtils.split(destinationStr, CanalConstants.CANAL_DESTINATION_SPLIT);
 
         for (String destination : destinations) {
-            InstanceConfig config = parseInstanceConfig(properties, destination);
+            InstanceConfig config = parseInstanceConfig(properties, destination);//解析配一个目的的配置
             InstanceConfig oldConfig = instanceConfigs.put(destination, config);
 
             if (oldConfig != null) {
@@ -334,6 +336,7 @@ public class CanalController {
         }
     }
 
+    //解析某一个目的的配置
     private InstanceConfig parseInstanceConfig(Properties properties, String destination) {
         InstanceConfig config = new InstanceConfig(globalInstanceConfig);
         String modeStr = getProperty(properties, CanalConstants.getInstanceModeKey(destination));
@@ -369,7 +372,7 @@ public class CanalController {
         logger.info("## start the canal server[{}:{}]", ip, port);
         // 创建整个canal的工作节点
         final String path = ZookeeperPathUtils.getCanalClusterNode(ip + ":" + port);
-        initCid(path);
+        initCid(path);//创建zookeeper的path
         if (zkclientx != null) {
             this.zkclientx.subscribeStateChanges(new IZkStateListener() {
 
@@ -437,6 +440,7 @@ public class CanalController {
         logger.info("## stop the canal server[{}:{}]", ip, port);
     }
 
+    //创建zookeeper的path
     private void initCid(String path) {
         // logger.info("## init the canalId = {}", cid);
         // 初始化系统目录
@@ -453,6 +457,7 @@ public class CanalController {
         }
     }
 
+    //删除zookeeper的path
     private void releaseCid(String path) {
         // logger.info("## release the canalId = {}", cid);
         // 初始化系统目录

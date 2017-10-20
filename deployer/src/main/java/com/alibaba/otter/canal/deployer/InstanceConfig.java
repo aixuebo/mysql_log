@@ -15,8 +15,8 @@ public class InstanceConfig {
     private InstanceConfig globalConfig;//全局的配置信息
     private InstanceMode   mode;//spring还是manager模式加载实例
     private Boolean        lazy;
-    private String         managerAddress;
-    private String         springXml;
+    private String         managerAddress;//用于manager模式
+    private String         springXml;//用于spring模式
 
     public InstanceConfig(){
 
