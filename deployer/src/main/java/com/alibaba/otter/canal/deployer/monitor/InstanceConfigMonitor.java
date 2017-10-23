@@ -10,7 +10,7 @@ import com.alibaba.otter.canal.common.CanalLifeCycle;
  */
 public interface InstanceConfigMonitor extends CanalLifeCycle {
 
-    void register(String destination, InstanceAction action);
+    void register(String destination, InstanceAction action);//为该配置文件添加一个监听器InstanceAction,当文件开始 或者结束、或者更改的时候,InstanceAction会以什么方式处理该文件
 
     void unregister(String destination);
 }

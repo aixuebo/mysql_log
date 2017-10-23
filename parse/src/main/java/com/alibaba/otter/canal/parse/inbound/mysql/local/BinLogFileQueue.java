@@ -16,16 +16,16 @@ import org.apache.commons.io.filefilter.IOFileFilter;
 import com.alibaba.otter.canal.parse.exception.CanalParseException;
 
 /**
- * 维护binlog文件列表
+ * 定期维护binlog文件列表列表
  * 
  * @author jianghang 2012-7-7 下午03:48:05
  * @version 1.0.0
  */
 public class BinLogFileQueue {
 
-    private String        baseName       = "mysql-bin.";
-    private List<File>    binlogs        = new ArrayList<File>();
-    private File          directory;
+    private String        baseName       = "mysql-bin.";//文件名字的前缀
+    private List<File>    binlogs        = new ArrayList<File>();//存储binlog文件集合
+    private File          directory;//binlog文件夹
     private ReentrantLock lock           = new ReentrantLock();
     private Condition     nextCondition  = lock.newCondition();
     private Timer         timer          = new Timer(true);
@@ -42,11 +42,12 @@ public class BinLogFileQueue {
             throw new CanalParseException("Binlog index missing or unreadable;  " + directory.getAbsolutePath());
         }
 
-        List<File> files = listBinlogFiles();
+        List<File> files = listBinlogFiles();//找到所有文件夹下binlog文件集合
         for (File file : files) {
             offer(file);
         }
 
+        //定期将binlog文件加入到集合中
         timer.scheduleAtFixedRate(new TimerTask() {
 
             public void run() {
@@ -89,6 +90,7 @@ public class BinLogFileQueue {
         }
     }
 
+    //获取file的binlog文件的前一个binlog文件
     public File getBefore(File file) {
         try {
             lock.lockInterruptibly();
@@ -96,7 +98,7 @@ public class BinLogFileQueue {
                 return null;
             } else {
                 if (file == null) {// 第一次
-                    return binlogs.get(binlogs.size() - 1);
+                    return binlogs.get(binlogs.size() - 1);//获取最后一个binlog文件
                 } else {
                     int index = seek(file);
                     if (index > 0) {
@@ -165,6 +167,7 @@ public class BinLogFileQueue {
         }
     }
 
+    //存储binlog文件集合
     private boolean offer(File file) {
         try {
             lock.lockInterruptibly();
@@ -183,6 +186,7 @@ public class BinLogFileQueue {
         }
     }
 
+    //找到所有文件夹下binlog文件集合
     private List<File> listBinlogFiles() {
         List<File> files = new ArrayList<File>();
         files.addAll(FileUtils.listFiles(directory, new IOFileFilter() {
@@ -206,6 +210,7 @@ public class BinLogFileQueue {
         return files;
     }
 
+    //找到文件所在文件集合中的序号
     private int seek(File file) {
         for (int i = 0; i < binlogs.size(); i++) {
             File binlog = binlogs.get(i);

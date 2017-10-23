@@ -8,7 +8,7 @@ import com.alibaba.otter.canal.parse.driver.mysql.utils.ByteHelper;
 
 /**
  * Aka. OK packet
- * 
+ * 表示response返回的内容成功
  * @author fujohnwang
  */
 public class OKPacket extends PacketWithHeaderPacket {
@@ -34,6 +34,7 @@ public class OKPacket extends PacketWithHeaderPacket {
      * </pre>
      * 
      * @throws IOException
+     * 收到response的返回的全部内容
      */
     public void fromBytes(byte[] data) throws IOException {
         int index = 0;

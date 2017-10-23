@@ -9,12 +9,16 @@ import java.io.IOException;
  */
 public interface ErosaConnection {
 
+    //创建连接
     public void connect() throws IOException;
 
+    //重新连接
     public void reconnect() throws IOException;
 
+    //销毁连接
     public void disconnect() throws IOException;
 
+    //是否连接
     public boolean isConnected();
 
     /**
@@ -26,5 +30,6 @@ public interface ErosaConnection {
 
     public void dump(long timestamp, SinkFunction func) throws IOException;
 
+    //重新产生一个子进程
     ErosaConnection fork();
 }

@@ -8,7 +8,7 @@ import com.alibaba.otter.canal.parse.driver.mysql.utils.ByteHelper;
 
 public class Reply323Packet extends PacketWithHeaderPacket {
 
-    public byte[] seed;
+    public byte[] seed;//要发送的数据包
 
     public void fromBytes(byte[] data) throws IOException {
 
@@ -19,7 +19,7 @@ public class Reply323Packet extends PacketWithHeaderPacket {
             return new byte[] { (byte) 0 };
         } else {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
-            ByteHelper.writeNullTerminated(seed, out);
+            ByteHelper.writeNullTerminated(seed, out);//将data的字节写入到out中,并且追加null的终止字符
             return out.toByteArray();
         }
     }

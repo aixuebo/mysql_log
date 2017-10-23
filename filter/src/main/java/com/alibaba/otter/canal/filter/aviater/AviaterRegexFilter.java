@@ -22,8 +22,8 @@ import com.googlecode.aviator.Expression;
  */
 public class AviaterRegexFilter implements CanalEventFilter<String> {
 
-    private static final String             SPLIT             = ",";
-    private static final String             PATTERN_SPLIT     = "|";
+    private static final String             SPLIT             = ",";//多个正则表达可以使用逗号分割
+    private static final String             PATTERN_SPLIT     = "|";//正则表达式规则使用|分隔
     private static final String             FILTER_EXPRESSION = "regex(pattern,target)";//表达式含义说明,pattern表示一个正则,去匹配target
     private static final RegexFunction      regexFunction     = new RegexFunction();
     private final Expression                exp               = AviatorEvaluator.compile(FILTER_EXPRESSION, true);
@@ -33,7 +33,7 @@ public class AviaterRegexFilter implements CanalEventFilter<String> {
 
     private static final Comparator<String> COMPARATOR        = new StringComparator();
 
-    final private String                    pattern;
+    final private String                    pattern;//正则表达式
     final private boolean                   defaultEmptyValue;//默认返回值
 
     public AviaterRegexFilter(String pattern){
@@ -60,7 +60,7 @@ public class AviaterRegexFilter implements CanalEventFilter<String> {
     }
 
     public boolean filter(String filtered) throws CanalFilterException {
-        if (StringUtils.isEmpty(pattern)) {
+        if (StringUtils.isEmpty(pattern)) {//说明没有设置正则表达式,则返回默认值
             return defaultEmptyValue;
         }
 

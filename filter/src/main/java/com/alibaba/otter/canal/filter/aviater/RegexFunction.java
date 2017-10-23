@@ -24,8 +24,8 @@ public class RegexFunction extends AbstractFunction {
 	 * arg2 表示要进行匹配的字符串
 	 */
     public AviatorObject call(Map<String, Object> env, AviatorObject arg1, AviatorObject arg2) {
-        String pattern = FunctionUtils.getStringValue(arg1, env);
-        String text = FunctionUtils.getStringValue(arg2, env);
+        String pattern = FunctionUtils.getStringValue(arg1, env);//正则表达式
+        String text = FunctionUtils.getStringValue(arg2, env);//要匹配的内容
         Perl5Matcher matcher = new Perl5Matcher();
         boolean isMatch = matcher.matches(text, PatternUtils.getPattern(pattern));
         return AviatorBoolean.valueOf(isMatch);

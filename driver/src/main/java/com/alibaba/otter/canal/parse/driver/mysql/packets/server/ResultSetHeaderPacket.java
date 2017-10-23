@@ -24,16 +24,17 @@ import com.alibaba.otter.canal.parse.driver.mysql.utils.ByteHelper;
  * <pre>
  * 
  * @author fujohnwang
+ * sql查询的结果集包
  */
 public class ResultSetHeaderPacket extends PacketWithHeaderPacket {
 
-    private long columnCount;
+    private long columnCount;//该结果集有多少个列
     private long extra;
 
     public void fromBytes(byte[] data) throws IOException {
         int index = 0;
-        byte[] colCountBytes = ByteHelper.readBinaryCodedLengthBytes(data, index);
-        columnCount = ByteHelper.readLengthCodedBinary(colCountBytes, index);
+        byte[] colCountBytes = ByteHelper.readBinaryCodedLengthBytes(data, index);//读取count的字节数组
+        columnCount = ByteHelper.readLengthCodedBinary(colCountBytes, index);//将字节数组转换成long,即有多少列返回
         index += colCountBytes.length;
         if (index < data.length - 1) {
             extra = ByteHelper.readLengthCodedBinary(data, index);

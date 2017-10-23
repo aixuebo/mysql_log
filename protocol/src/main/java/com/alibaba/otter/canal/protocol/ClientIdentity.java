@@ -10,12 +10,13 @@ import com.alibaba.otter.canal.common.utils.CanalToStringStyle;
 /**
  * @author zebin.xuzb @ 2012-6-20
  * @version 1.0.0
+ * 表示一个客户端配置
  */
 public class ClientIdentity implements Serializable {
 
-    private String destination;
-    private short  clientId;
-    private String filter;
+    private String destination;//目的地
+    private short  clientId;//客户点ID
+    private String filter;//过滤条件
 
     public ClientIdentity(){
 

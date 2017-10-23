@@ -9,7 +9,7 @@ import com.alibaba.otter.canal.parse.driver.mysql.utils.MSC;
 
 /**
  * MySQL Handshake Initialization Packet.<br>
- * 
+ * 用于mysql的鉴权
  * @author fujohnwang
  * @since 1.0
  */

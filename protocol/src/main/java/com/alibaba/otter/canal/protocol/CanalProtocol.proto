@@ -4,6 +4,7 @@ option java_package = "com.alibaba.otter.canal.protocol";
 option java_outer_classname = "CanalPacket";
 option optimize_for = SPEED;
 
+###压缩方式
 enum Compression {
     NONE = 1;
     ZLIB = 2;

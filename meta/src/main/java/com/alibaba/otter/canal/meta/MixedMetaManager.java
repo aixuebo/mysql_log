@@ -16,6 +16,8 @@ import com.google.common.collect.MigrateMap;
 
 /**
  * 组合memory + zookeeper的使用模式
+ * 数据都保存在zookeeper中,因此每次初始化的时候都从zookeeper中可以获取,但是获取后存储在内存中,数据不更改的时候从内存中获取数据
+ * 即 此时相当于在zookeeper模式中添加了一个cache缓存层
  *
  * @author jianghang 2012-7-11 下午03:58:00
  * @version 1.0.0

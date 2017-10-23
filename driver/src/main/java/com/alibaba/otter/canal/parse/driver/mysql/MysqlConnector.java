@@ -35,11 +35,11 @@ public class MysqlConnector {
     private byte                charsetNumber     = 33;
     private String              defaultSchema     = "retl";
     private int                 soTimeout         = 30 * 1000;
-    private int                 receiveBufferSize = 16 * 1024;
+    private int                 receiveBufferSize = 16 * 1024;//连接从response中接收数据的缓冲池,即socket关于response收到的数据的缓冲区
     private int                 sendBufferSize    = 16 * 1024;
 
     private SocketChannel       channel;
-    private volatile boolean    dumping           = false;
+    private volatile boolean    dumping           = false;//true表示此时已经向master发送了binlog信息了,等待回复中
     // mysql connectinnId
     private long                connectionId      = -1;
     private AtomicBoolean       connected         = new AtomicBoolean(false);

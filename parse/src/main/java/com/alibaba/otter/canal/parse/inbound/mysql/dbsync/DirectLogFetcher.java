@@ -17,6 +17,7 @@ import com.taobao.tddl.dbsync.binlog.LogFetcher;
  * 
  * @author jianghang 2013-1-14 下午07:39:30
  * @version 1.0.0
+ * 直接抓去master的response日志
  */
 public class DirectLogFetcher extends LogFetcher {
 
@@ -30,13 +31,13 @@ public class DirectLogFetcher extends LogFetcher {
     public static final int       SQLSTATE_LENGTH   = 5;
 
     /** Packet offsets */
-    public static final int       PACKET_LEN_OFFSET = 0;
-    public static final int       PACKET_SEQ_OFFSET = 3;
+    public static final int       PACKET_LEN_OFFSET = 0;//文件长度的位置
+    public static final int       PACKET_SEQ_OFFSET = 3;//获取包序号的位置
 
     /** Maximum packet length */
-    public static final int       MAX_PACKET_LENGTH = (256 * 256 * 256 - 1);
+    public static final int       MAX_PACKET_LENGTH = (256 * 256 * 256 - 1);//最大包的长度
 
-    private SocketChannel         channel;
+    private SocketChannel         channel;//该channel已经连接了master
 
     // private BufferedInputStream input;
 
@@ -63,25 +64,26 @@ public class DirectLogFetcher extends LogFetcher {
      * {@inheritDoc}
      * 
      * @see com.taobao.tddl.dbsync.binlog.LogFetcher#fetch()
+     * 一次抓去后,buff的内容就是所有的返回值
      */
     public boolean fetch() throws IOException {
         try {
             // Fetching packet header from input.
-            if (!fetch0(0, NET_HEADER_SIZE)) {
+            if (!fetch0(0, NET_HEADER_SIZE)) {//抓去4个数据头文件
                 logger.warn("Reached end of input stream while fetching header");
                 return false;
             }
 
             // Fetching the first packet(may a multi-packet).
-            int netlen = getUint24(PACKET_LEN_OFFSET);
-            int netnum = getUint8(PACKET_SEQ_OFFSET);
-            if (!fetch0(NET_HEADER_SIZE, netlen)) {
+            int netlen = getUint24(PACKET_LEN_OFFSET);//返回response的文件长度
+            int netnum = getUint8(PACKET_SEQ_OFFSET);//以及返回文件包的序号
+            if (!fetch0(NET_HEADER_SIZE, netlen)) {//从4位置开始缓存buffer数据,抓去response的长度信息
                 logger.warn("Reached end of input stream: packet #" + netnum + ", len = " + netlen);
                 return false;
             }
 
             // Detecting error code.
-            final int mark = getUint8(NET_HEADER_SIZE);
+            final int mark = getUint8(NET_HEADER_SIZE);//获取错误标识
             if (mark != 0) {
                 if (mark == 255) // error from master
                 {
@@ -108,7 +110,7 @@ public class DirectLogFetcher extends LogFetcher {
             }
 
             // The first packet is a multi-packet, concatenate the packets.
-            while (netlen == MAX_PACKET_LENGTH) {
+            while (netlen == MAX_PACKET_LENGTH) {//说明包慢着呢
                 if (!fetch0(0, NET_HEADER_SIZE)) {
                     logger.warn("Reached end of input stream while fetching header");
                     return false;
@@ -123,9 +125,9 @@ public class DirectLogFetcher extends LogFetcher {
             }
 
             // Preparing buffer variables to decoding.
-            origin = NET_HEADER_SIZE + 1;
-            position = origin;
-            limit -= origin;
+            origin = NET_HEADER_SIZE + 1;//buffer的开始位置
+            position = origin;//当前处理到哪个位置了
+            limit -= origin;//总长度,即origin位置的信息可以丢弃了
             return true;
         } catch (SocketTimeoutException e) {
             close(); /* Do cleanup */
@@ -146,11 +148,12 @@ public class DirectLogFetcher extends LogFetcher {
         }
     }
 
+    //读取len个数据,将其存储到buff的off位置上进行缓存
     private final boolean fetch0(final int off, final int len) throws IOException {
         ensureCapacity(off + len);
 
         ByteBuffer buffer = ByteBuffer.wrap(this.buffer, off, len);
-        while (buffer.hasRemaining()) {
+        while (buffer.hasRemaining()) {//读取数据
             int readNum = channel.read(buffer);
             if (readNum == -1) {
                 throw new IOException("Unexpected End Stream");
@@ -164,7 +167,7 @@ public class DirectLogFetcher extends LogFetcher {
         // }
         // }
 
-        if (limit < off + len) limit = off + len;
+        if (limit < off + len) limit = off + len;//更新buff的limit位置
         return true;
     }
 

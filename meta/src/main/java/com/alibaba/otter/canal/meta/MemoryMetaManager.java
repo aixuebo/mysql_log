@@ -18,16 +18,16 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.MigrateMap;
 
 /**
- * 内存版实现
+ * 基于内存版实现
  * 
  * @author zebin.xuzb @ 2012-7-2
  * @version 1.0.0
  */
 public class MemoryMetaManager extends AbstractCanalLifeCycle implements CanalMetaManager {
 
-    protected Map<String, List<ClientIdentity>>              destinations;
-    protected Map<ClientIdentity, MemoryClientIdentityBatch> batches;
-    protected Map<ClientIdentity, Position>                  cursors;
+    protected Map<String, List<ClientIdentity>>              destinations;//每一个目的地对应的客户端集合
+    protected Map<ClientIdentity, MemoryClientIdentityBatch> batches;//每一个客户端持有一个批处理信息集合
+    protected Map<ClientIdentity, Position>                  cursors;//每一个客户端持有的游标映射
 
     public void start() {
         super.start();
@@ -60,16 +60,18 @@ public class MemoryMetaManager extends AbstractCanalLifeCycle implements CanalMe
         }
     }
 
+    //订阅一个客户端
     public synchronized void subscribe(ClientIdentity clientIdentity) throws CanalMetaManagerException {
         List<ClientIdentity> clientIdentitys = destinations.get(clientIdentity.getDestination());
 
-        if (clientIdentitys.contains(clientIdentity)) {
+        if (clientIdentitys.contains(clientIdentity)) {//先移除,后添加
             clientIdentitys.remove(clientIdentity);
         }
 
         clientIdentitys.add(clientIdentity);
     }
 
+    //是否该客户端已经注册了
     public synchronized boolean hasSubscribe(ClientIdentity clientIdentity) throws CanalMetaManagerException {
         List<ClientIdentity> clientIdentitys = destinations.get(clientIdentity.getDestination());
         return clientIdentitys != null && clientIdentitys.contains(clientIdentity);
@@ -129,11 +131,12 @@ public class MemoryMetaManager extends AbstractCanalLifeCycle implements CanalMe
 
     // ============================
 
+    //每一个客户端持有一个该对象
     public static class MemoryClientIdentityBatch {
 
-        private ClientIdentity           clientIdentity;
-        private Map<Long, PositionRange> batches          = new MapMaker().makeMap();
-        private AtomicLong               atomicMaxBatchId = new AtomicLong(1);
+        private ClientIdentity           clientIdentity;//客户端对象
+        private Map<Long, PositionRange> batches          = new MapMaker().makeMap();//每一个客户端批处理ID以及对应的批处理信息
+        private AtomicLong               atomicMaxBatchId = new AtomicLong(1);//自动更新批处理ID的最大值
 
         public static MemoryClientIdentityBatch create(ClientIdentity clientIdentity) {
             return new MemoryClientIdentityBatch(clientIdentity);
@@ -147,21 +150,23 @@ public class MemoryMetaManager extends AbstractCanalLifeCycle implements CanalMe
             this.clientIdentity = clientIdentity;
         }
 
+        //添加一个批处理ID
         public synchronized void addPositionRange(PositionRange positionRange, Long batchId) {
-            updateMaxId(batchId);
+            updateMaxId(batchId);//更新批处理ID
             batches.put(batchId, positionRange);
         }
 
         public synchronized Long addPositionRange(PositionRange positionRange) {
-            Long batchId = atomicMaxBatchId.getAndIncrement();
+            Long batchId = atomicMaxBatchId.getAndIncrement();//自动更新批处理
             batches.put(batchId, positionRange);
             return batchId;
         }
 
+        //移除一个批处理
         public synchronized PositionRange removePositionRange(Long batchId) {
             if (batches.containsKey(batchId)) {
                 Long minBatchId = Collections.min(batches.keySet());
-                if (!minBatchId.equals(batchId)) {
+                if (!minBatchId.equals(batchId)) {//移除的必须是最小的批处理
                     // 检查一下提交的ack/rollback，必须按batchId分出去的顺序提交，否则容易出现丢数据
                     throw new CanalMetaManagerException(String.format("batchId:%d is not the firstly:%d",
                         batchId,
@@ -173,10 +178,12 @@ public class MemoryMetaManager extends AbstractCanalLifeCycle implements CanalMe
             }
         }
 
+        //获取一个批处理信息
         public synchronized PositionRange getPositionRange(Long batchId) {
             return batches.get(batchId);
         }
 
+        //最新的批处理
         public synchronized PositionRange getLastestPositionRange() {
             if (batches.size() == 0) {
                 return null;
@@ -186,6 +193,7 @@ public class MemoryMetaManager extends AbstractCanalLifeCycle implements CanalMe
             }
         }
 
+        //最早的批处理
         public synchronized PositionRange getFirstPositionRange() {
             if (batches.size() == 0) {
                 return null;
@@ -195,6 +203,7 @@ public class MemoryMetaManager extends AbstractCanalLifeCycle implements CanalMe
             }
         }
 
+        //所有批处理
         public synchronized Map<Long, PositionRange> listAllPositionRange() {
             Set<Long> batchIdSets = batches.keySet();
             List<Long> batchIds = Lists.newArrayList(batchIdSets);

@@ -32,8 +32,8 @@ public class MysqlConnection implements ErosaConnection {
     private MysqlConnector      connector;
     private long                slaveId;
     private Charset             charset = Charset.forName("UTF-8");
-    private BinlogFormat        binlogFormat;
-    private BinlogImage         binlogImage;
+    private BinlogFormat        binlogFormat;// SHOW VARIABLES LIKE 'binlog_format'的返回值,即binlog的格式
+    private BinlogImage         binlogImage;//show variables like 'binlog_row_image'的返回值
 
     public MysqlConnection(){
     }
@@ -64,11 +64,13 @@ public class MysqlConnection implements ErosaConnection {
         return connector.isConnected();
     }
 
+    //执行查询命令
     public ResultSetPacket query(String cmd) throws IOException {
         MysqlQueryExecutor exector = new MysqlQueryExecutor(connector);
         return exector.query(cmd);
     }
 
+    //例如执行mysql命令 set wait_timeout=9999999
     public void update(String cmd) throws IOException {
         MysqlUpdateExecutor exector = new MysqlUpdateExecutor(connector);
         exector.update(cmd);
@@ -78,18 +80,18 @@ public class MysqlConnection implements ErosaConnection {
      * 加速主备切换时的查找速度，做一些特殊优化，比如只解析事务头或者尾
      */
     public void seek(String binlogfilename, Long binlogPosition, SinkFunction func) throws IOException {
-        updateSettings();
+        updateSettings();//设置环境信息,即向mysql主库发送信息
 
-        sendBinlogDump(binlogfilename, binlogPosition);
-        DirectLogFetcher fetcher = new DirectLogFetcher(connector.getReceiveBufferSize());
+        sendBinlogDump(binlogfilename, binlogPosition);//设置要读取哪些binlog信息,通知master节点
+        DirectLogFetcher fetcher = new DirectLogFetcher(connector.getReceiveBufferSize());//创建抓去master日志的对象
         fetcher.start(connector.getChannel());
-        LogDecoder decoder = new LogDecoder();
+        LogDecoder decoder = new LogDecoder();//日志解码器
         decoder.handle(LogEvent.ROTATE_EVENT);
         decoder.handle(LogEvent.FORMAT_DESCRIPTION_EVENT);
         decoder.handle(LogEvent.QUERY_EVENT);
         decoder.handle(LogEvent.XID_EVENT);
         LogContext context = new LogContext();
-        while (fetcher.fetch()) {
+        while (fetcher.fetch()) {//不断的抓去数据
             LogEvent event = null;
             event = decoder.decode(fetcher, context);
 
@@ -105,12 +107,12 @@ public class MysqlConnection implements ErosaConnection {
 
     public void dump(String binlogfilename, Long binlogPosition, SinkFunction func) throws IOException {
         updateSettings();
-        sendBinlogDump(binlogfilename, binlogPosition);
+        sendBinlogDump(binlogfilename, binlogPosition);//设置要读取哪些binlog信息,通知master节点
         DirectLogFetcher fetcher = new DirectLogFetcher(connector.getReceiveBufferSize());
         fetcher.start(connector.getChannel());
         LogDecoder decoder = new LogDecoder(LogEvent.UNKNOWN_EVENT, LogEvent.ENUM_END_EVENT);
         LogContext context = new LogContext();
-        while (fetcher.fetch()) {
+        while (fetcher.fetch()) {//不断的抓去日志信息
             LogEvent event = null;
             event = decoder.decode(fetcher, context);
 
@@ -124,23 +126,25 @@ public class MysqlConnection implements ErosaConnection {
         }
     }
 
+    //不支持按照时间戳方式dump
     public void dump(long timestamp, SinkFunction func) throws IOException {
         throw new NullPointerException("Not implement yet");
     }
 
+    //设置要读取哪些binlog信息,通知master节点
     private void sendBinlogDump(String binlogfilename, Long binlogPosition) throws IOException {
-        BinlogDumpCommandPacket binlogDumpCmd = new BinlogDumpCommandPacket();
+        BinlogDumpCommandPacket binlogDumpCmd = new BinlogDumpCommandPacket();//组装发送binlog的命令
         binlogDumpCmd.binlogFileName = binlogfilename;
         binlogDumpCmd.binlogPosition = binlogPosition;
         binlogDumpCmd.slaveServerId = this.slaveId;
-        byte[] cmdBody = binlogDumpCmd.toBytes();
+        byte[] cmdBody = binlogDumpCmd.toBytes();//要发送的数据--属于要发送给master的信息
 
         logger.info("COM_BINLOG_DUMP with position:{}", binlogDumpCmd);
         HeaderPacket binlogDumpHeader = new HeaderPacket();
         binlogDumpHeader.setPacketBodyLength(cmdBody.length);
-        binlogDumpHeader.setPacketSequenceNumber((byte) 0x00);
+        binlogDumpHeader.setPacketSequenceNumber((byte) 0x00);//使用一个包进行发送
         PacketManager.write(connector.getChannel(), new ByteBuffer[] { ByteBuffer.wrap(binlogDumpHeader.toBytes()),
-                ByteBuffer.wrap(cmdBody) });
+                ByteBuffer.wrap(cmdBody) });//真正发送给master
 
         connector.setDumping(true);
     }
@@ -163,7 +167,6 @@ public class MysqlConnection implements ErosaConnection {
      * <li>net_read_timeout</li>
      * </ol>
      * 
-     * @param channel
      * @throws IOException
      */
     private void updateSettings() throws IOException {
@@ -215,18 +218,18 @@ public class MysqlConnection implements ErosaConnection {
     private void loadBinlogFormat() {
         ResultSetPacket rs = null;
         try {
-            rs = query("show variables like 'binlog_format'");
+            rs = query("show variables like 'binlog_format'");//查看binlog的master的模式
         } catch (IOException e) {
             throw new CanalParseException(e);
         }
 
-        List<String> columnValues = rs.getFieldValues();
-        if (columnValues == null || columnValues.size() != 2) {
+        List<String> columnValues = rs.getFieldValues();//获取返回结果集
+        if (columnValues == null || columnValues.size() != 2) {//必须有两个值
             logger.warn("unexpected binlog format query result, this may cause unexpected result, so throw exception to request network to io shutdown.");
             throw new IllegalStateException("unexpected binlog format query result:" + rs.getFieldValues());
         }
 
-        binlogFormat = BinlogFormat.valuesOf(columnValues.get(1));
+        binlogFormat = BinlogFormat.valuesOf(columnValues.get(1));//获取格式,比如MIXED
         if (binlogFormat == null) {
             throw new IllegalStateException("unexpected binlog format query result:" + rs.getFieldValues());
         }
@@ -256,6 +259,13 @@ public class MysqlConnection implements ErosaConnection {
         }
     }
 
+    /**
+     mysql复制主要有三种方式：
+     基于SQL语句的复制(statement-based replication, SBR)，
+     基于行的复制(row-based replication, RBR)，
+     混合模式复制(mixed-based replication, MBR)。
+     对应的，binlog的格式也有三种：STATEMENT，ROW，MIXED。
+     */
     public static enum BinlogFormat {
 
         STATEMENT("STATEMENT"), ROW("ROW"), MIXED("MIXED");

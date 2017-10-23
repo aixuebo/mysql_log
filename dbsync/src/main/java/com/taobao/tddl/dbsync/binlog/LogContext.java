@@ -11,6 +11,7 @@ import com.taobao.tddl.dbsync.binlog.event.TableMapLogEvent;
  * 
  * @author <a href="mailto:changyuan.lh@taobao.com">Changyuan.lh</a>
  * @version 1.0
+ * 处理的上下文对象
  */
 public final class LogContext {
 
@@ -18,7 +19,7 @@ public final class LogContext {
 
     private FormatDescriptionLogEvent         formatDescription;
 
-    private LogPosition                       logPosition;
+    private LogPosition                       logPosition;//记录binlog已经处理到哪个日志文件了,以及处理到该日志文件的哪个位置了
 
     public LogContext(){
         this.formatDescription = FormatDescriptionLogEvent.FORMAT_DESCRIPTION_EVENT_5_x;

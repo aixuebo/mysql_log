@@ -36,10 +36,10 @@ import com.alibaba.otter.canal.store.model.Events;
 public class MemoryEventStoreWithBuffer extends AbstractCanalStoreScavenge implements CanalEventStore<Event>, CanalStoreScavenge {
 
     private static final long INIT_SQEUENCE = -1;
-    private int               bufferSize    = 16 * 1024;
+    private int               bufferSize    = 16 * 1024;//队列的size
     private int               bufferMemUnit = 1024;                         // memsize的单位，默认为1kb大小
     private int               indexMask;
-    private Event[]           entries;
+    private Event[]           entries;//存储事件的队列
 
     // 记录下put/get/ack操作的三个下标
     private AtomicLong        putSequence   = new AtomicLong(INIT_SQEUENCE); // 代表当前put操作最后一次写操作发生的位置
@@ -48,16 +48,16 @@ public class MemoryEventStoreWithBuffer extends AbstractCanalStoreScavenge imple
 
     // 记录下put/get/ack操作的三个memsize大小
     private AtomicLong        putMemSize    = new AtomicLong(0);
-    private AtomicLong        getMemSize    = new AtomicLong(0);
+    private AtomicLong        getMemSize    = new AtomicLong(0);//已经get到多少内存
     private AtomicLong        ackMemSize    = new AtomicLong(0);
 
     // 阻塞put/get操作控制信号
     private ReentrantLock     lock          = new ReentrantLock();
-    private Condition         notFull       = lock.newCondition();
-    private Condition         notEmpty      = lock.newCondition();
+    private Condition         notFull       = lock.newCondition();//当非满的时候使用,即已经get完成了.有空间进行put了
+    private Condition         notEmpty      = lock.newCondition();//当非空的时候,即put到数据了,可以get了,因此此时时候
 
     private BatchMode         batchMode     = BatchMode.ITEMSIZE;           // 默认为内存大小模式
-    private boolean           ddlIsolation  = false;
+    private boolean           ddlIsolation  = false;//针对DDL的处理,true表示一次get的请求只能是一个DDL,不能有其他数据
 
     public MemoryEventStoreWithBuffer(){
 
@@ -83,6 +83,7 @@ public class MemoryEventStoreWithBuffer extends AbstractCanalStoreScavenge imple
         cleanAll();
     }
 
+    //不断添加数据,一直到添加成功未知,队列满了就等待
     public void put(List<Event> data) throws InterruptedException, CanalStoreException {
         if (data == null || data.isEmpty()) {
             return;
@@ -108,12 +109,13 @@ public class MemoryEventStoreWithBuffer extends AbstractCanalStoreScavenge imple
         }
     }
 
+    //直到timeout还没有存储成功,则返回false
     public boolean put(List<Event> data, long timeout, TimeUnit unit) throws InterruptedException, CanalStoreException {
         if (data == null || data.isEmpty()) {
             return true;
         }
 
-        long nanos = unit.toNanos(timeout);
+        long nanos = unit.toNanos(timeout);//转换时间单位
         final ReentrantLock lock = this.lock;
         lock.lockInterruptibly();
         try {
@@ -138,6 +140,7 @@ public class MemoryEventStoreWithBuffer extends AbstractCanalStoreScavenge imple
         }
     }
 
+    //只会添加一次,队列满了就不用等待了,直接退出,返回false
     public boolean tryPut(List<Event> data) throws CanalStoreException {
         if (data == null || data.isEmpty()) {
             return true;
@@ -178,10 +181,10 @@ public class MemoryEventStoreWithBuffer extends AbstractCanalStoreScavenge imple
 
         // 先写数据，再更新对应的cursor,并发度高的情况，putSequence会被get请求可见，拿出了ringbuffer中的老的Entry值
         for (long next = current + 1; next <= end; next++) {
-            entries[getIndex(next)] = data.get((int) (next - current - 1));
+            entries[getIndex(next)] = data.get((int) (next - current - 1));//将每一个data内的数据添加到entries中
         }
 
-        putSequence.set(end);
+        putSequence.set(end);//设置最新的位置--put到哪里了
 
         // 记录一下gets memsize信息，方便快速检索
         if (batchMode.isMemSize()) {
@@ -190,13 +193,14 @@ public class MemoryEventStoreWithBuffer extends AbstractCanalStoreScavenge imple
                 size += calculateSize(event);
             }
 
-            putMemSize.getAndAdd(size);
+            putMemSize.getAndAdd(size);//计算put的size大小
         }
 
         // tell other threads that store is not empty
         notEmpty.signal();
     }
 
+    //从哪个队列位置开始获取数据,获取多少条数据
     public Events<Event> get(Position start, int batchSize) throws InterruptedException, CanalStoreException {
         final ReentrantLock lock = this.lock;
         lock.lockInterruptibly();
@@ -215,6 +219,7 @@ public class MemoryEventStoreWithBuffer extends AbstractCanalStoreScavenge imple
         }
     }
 
+    //从哪个队列位置开始获取数据,获取多少条数据,如果timeout还没有获取完,则有多少获取多少
     public Events<Event> get(Position start, int batchSize, long timeout, TimeUnit unit) throws InterruptedException,
                                                                                         CanalStoreException {
         long nanos = unit.toNanos(timeout);
@@ -244,6 +249,7 @@ public class MemoryEventStoreWithBuffer extends AbstractCanalStoreScavenge imple
         }
     }
 
+    //有多少获取多少,不需要获取batchSize个数据后在返回
     public Events<Event> tryGet(Position start, int batchSize) throws CanalStoreException {
         final ReentrantLock lock = this.lock;
         lock.lock();
@@ -257,8 +263,8 @@ public class MemoryEventStoreWithBuffer extends AbstractCanalStoreScavenge imple
     private Events<Event> doGet(Position start, int batchSize) throws CanalStoreException {
         LogPosition startPosition = (LogPosition) start;
 
-        long current = getSequence.get();
-        long maxAbleSequence = putSequence.get();
+        long current = getSequence.get();//上次获取到哪里了
+        long maxAbleSequence = putSequence.get();//目前写到哪里了
         long next = current;
         long end = current;
         // 如果startPosition为null，说明是第一次，默认+1处理
@@ -266,38 +272,38 @@ public class MemoryEventStoreWithBuffer extends AbstractCanalStoreScavenge imple
             next = next + 1;
         }
 
-        if (current >= maxAbleSequence) {
+        if (current >= maxAbleSequence) {//说明没有空间去get
             return new Events<Event>();
         }
 
         Events<Event> result = new Events<Event>();
-        List<Event> entrys = result.getEvents();
-        long memsize = 0;
-        if (batchMode.isItemSize()) {
-            end = (next + batchSize - 1) < maxAbleSequence ? (next + batchSize - 1) : maxAbleSequence;
+        List<Event> entrys = result.getEvents();//存储get到的数据集合
+        long memsize = 0;//已经读取到的内存和
+        if (batchMode.isItemSize()) {//基于数量
+            end = (next + batchSize - 1) < maxAbleSequence ? (next + batchSize - 1) : maxAbleSequence;//要么全读取,要么读取batchSize条数据
             // 提取数据并返回
             for (; next <= end; next++) {
-                Event event = entries[getIndex(next)];
-                if (ddlIsolation && isDdl(event.getEntry().getHeader().getEventType())) {
+                Event event = entries[getIndex(next)];//获取事件
+                if (ddlIsolation && isDdl(event.getEntry().getHeader().getEventType())) {//说明是DDL事件
                     // 如果是ddl隔离，直接返回
-                    if (entrys.size() == 0) {
+                    if (entrys.size() == 0) {//说明第一条就是DDL事件,则停止get
                         entrys.add(event);// 如果没有DML事件，加入当前的DDL事件
                         end = next; // 更新end为当前
                     } else {
-                        // 如果之前已经有DML事件，直接返回了，因为不包含当前next这记录，需要回退一个位置
+                        // 如果之前已经有DML事件，直接返回了，因为不包含当前next这记录，需要回退一个位置  说明接下来的是DDL事件,则不读去该事件,直接返回已经读取到的非DDL事件
                         end = next - 1; // next-1一定大于current，不需要判断
                     }
                     break;
                 } else {
-                    entrys.add(event);
+                    entrys.add(event);//将事件加入到队列中---可能包含DDL事件等所有事件
                 }
             }
-        } else {
-            long maxMemSize = batchSize * bufferMemUnit;
-            for (; memsize <= maxMemSize && next <= maxAbleSequence; next++) {
+        } else {//基于内存
+            long maxMemSize = batchSize * bufferMemUnit;//此时batchSize就是内存大小,单位是K
+            for (; memsize <= maxMemSize && next <= maxAbleSequence; next++) {//只要内存不达到,就不断的添加数据即可
                 // 永远保证可以取出第一条的记录，避免死锁
                 Event event = entries[getIndex(next)];
-                if (ddlIsolation && isDdl(event.getEntry().getHeader().getEventType())) {
+                if (ddlIsolation && isDdl(event.getEntry().getHeader().getEventType())) {//是否是DDL操作
                     // 如果是ddl隔离，直接返回
                     if (entrys.size() == 0) {
                         entrys.add(event);// 如果没有DML事件，加入当前的DDL事件
@@ -334,7 +340,7 @@ public class MemoryEventStoreWithBuffer extends AbstractCanalStoreScavenge imple
             }
         }
 
-        if (getSequence.compareAndSet(current, end)) {
+        if (getSequence.compareAndSet(current, end)) {//说明此时get到的数据已经到end了
             getMemSize.addAndGet(memsize);
             notFull.signal();
             return result;
@@ -472,16 +478,17 @@ public class MemoryEventStoreWithBuffer extends AbstractCanalStoreScavenge imple
     // =================== helper method =================
 
     private long getMinimumGetOrAck() {
-        long get = getSequence.get();
-        long ack = ackSequence.get();
+        long get = getSequence.get();//get到哪里了
+        long ack = ackSequence.get();//确定的是到哪里了
         return ack <= get ? ack : get;
     }
 
     /**
-     * 查询是否有空位
+     * 查询是否有空位--用于put
+     * false表示队列满了,不能在put新元素了
      */
     private boolean checkFreeSlotAt(final long sequence) {
-        final long wrapPoint = sequence - bufferSize;
+        final long wrapPoint = sequence - bufferSize;//该值>0,表示序号已经比buff大了,并且大了多少个
         final long minPoint = getMinimumGetOrAck();
         if (wrapPoint > minPoint) { // 刚好追上一轮
             return false;
@@ -501,7 +508,7 @@ public class MemoryEventStoreWithBuffer extends AbstractCanalStoreScavenge imple
     }
 
     /**
-     * 检查是否存在需要get的数据,并且数量>=batchSize
+     * 检查是否存在需要get的数据,并且数量>=batchSize---用于get
      */
     private boolean checkUnGetSlotAt(LogPosition startPosition, int batchSize) {
         if (batchMode.isItemSize()) {
@@ -530,6 +537,7 @@ public class MemoryEventStoreWithBuffer extends AbstractCanalStoreScavenge imple
         }
     }
 
+    //计算每一个事件的字节大小
     private long calculateSize(Event event) {
         // 直接返回binlog中的事件大小
         return event.getEntry().getHeader().getEventLength();
@@ -539,6 +547,7 @@ public class MemoryEventStoreWithBuffer extends AbstractCanalStoreScavenge imple
         return (int) sequcnce & indexMask;
     }
 
+    //是否是ddl类型
     private boolean isDdl(EventType type) {
         return type == EventType.ALTER || type == EventType.CREATE || type == EventType.ERASE
                || type == EventType.RENAME || type == EventType.TRUNCATE || type == EventType.CINDEX

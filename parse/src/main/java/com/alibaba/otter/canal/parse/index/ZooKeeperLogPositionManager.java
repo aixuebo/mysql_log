@@ -28,6 +28,7 @@ public class ZooKeeperLogPositionManager extends AbstractCanalLifeCycle implemen
         super.stop();
     }
 
+    //获取该目的地的LogPosition信息
     public LogPosition getLatestIndexBy(String destination) {
         String path = ZookeeperPathUtils.getParsePath(destination);
         byte[] data = zkClientx.readData(path, true);
@@ -38,6 +39,7 @@ public class ZooKeeperLogPositionManager extends AbstractCanalLifeCycle implemen
         return JsonUtils.unmarshalFromByte(data, LogPosition.class);
     }
 
+    //存储destination的LogPosition信息
     public void persistLogPosition(String destination, LogPosition logPosition) {
         String path = ZookeeperPathUtils.getParsePath(destination);
         byte[] data = JsonUtils.marshalToByte(logPosition);

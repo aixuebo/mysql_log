@@ -5,7 +5,7 @@ import java.io.IOException;
 
 import com.alibaba.otter.canal.parse.driver.mysql.packets.CommandPacket;
 
-//发送查询命令
+//客户端发送查询命令 例如set wait_timeout=9999999
 public class QueryCommandPacket extends CommandPacket {
 
     private String queryString;

@@ -5,6 +5,7 @@ package com.taobao.tddl.dbsync.binlog;
  * 
  * @author <a href="mailto:changyuan.lh@taobao.com">Changyuan.lh</a>
  * @version 1.0
+ * 记录binlog已经处理到哪个日志文件了,以及处理到该日志文件的哪个位置了
  */
 public class LogPosition implements Cloneable, Comparable<LogPosition> {
 

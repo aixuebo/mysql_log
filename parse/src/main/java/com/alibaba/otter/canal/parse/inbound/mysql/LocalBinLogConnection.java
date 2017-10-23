@@ -21,17 +21,17 @@ import com.taobao.tddl.dbsync.binlog.event.QueryLogEvent;
 
 /**
  * local bin log connection (not real connection)
- * 
+ * binlog文件在本地,不用网络请求的方式读取binlog信息
  * @author yuanzu Date: 12-9-27 Time: 下午6:14
  */
 public class LocalBinLogConnection implements ErosaConnection {
 
     private static final Logger logger     = LoggerFactory.getLogger(LocalBinLogConnection.class);
-    private BinLogFileQueue     binlogs    = null;
-    private boolean             needWait;
-    private String              directory;
+    private BinLogFileQueue     binlogs    = null;//存储binlog日志文件的集合
+    private boolean             needWait;//true表示如果下一个binlog文件不存在的时候,可以等待一直到binlog存在未知
+    private String              directory;//binlog所在目录
     private int                 bufferSize = 16 * 1024;
-    private boolean             running    = false;
+    private boolean             running    = false;//true表示正在抓去中
 
     public LocalBinLogConnection(){
     }
@@ -72,6 +72,7 @@ public class LocalBinLogConnection implements ErosaConnection {
     public void seek(String binlogfilename, Long binlogPosition, SinkFunction func) throws IOException {
     }
 
+    //直接读取一个binlog文件
     public void dump(String binlogfilename, Long binlogPosition, SinkFunction func) throws IOException {
         File current = new File(directory, binlogfilename);
 
@@ -109,7 +110,7 @@ public class LocalBinLogConnection implements ErosaConnection {
 
                     File nextFile;
                     if (needWait) {
-                        nextFile = binlogs.waitForNextFile(current);
+                        nextFile = binlogs.waitForNextFile(current);//切换下一个binlog文件
                     } else {
                         nextFile = binlogs.getNextFile(current);
                     }
@@ -135,11 +136,13 @@ public class LocalBinLogConnection implements ErosaConnection {
         }
     }
 
+    //基于时间戳方式获取数据
     public void dump(long timestampMills, SinkFunction func) throws IOException {
-        List<File> currentBinlogs = binlogs.currentBinlogs();
+        List<File> currentBinlogs = binlogs.currentBinlogs();//获取全部的binlog文件集合
         File current = currentBinlogs.get(currentBinlogs.size() - 1);
         long timestampSeconds = timestampMills / 1000;
 
+        //获取该时间戳应该在哪个文件和哪个位置下
         String binlogFilename = null;
         long binlogFileOffset = 0;
 
@@ -163,13 +166,13 @@ public class LocalBinLogConnection implements ErosaConnection {
                     do {
                         event = decoder.decode(fetcher, context);
                         if (event != null) {
-                            if (event.getWhen() > timestampSeconds) {
+                            if (event.getWhen() > timestampSeconds) {//事件发生的时间戳
                                 break L;
                             }
 
                             needContinue = false;
                             if (LogEvent.QUERY_EVENT == event.getHeader().getType()) {
-                                if (StringUtils.endsWithIgnoreCase(((QueryLogEvent) event).getQuery(), "BEGIN")) {
+                                if (StringUtils.endsWithIgnoreCase(((QueryLogEvent) event).getQuery(), "BEGIN")) {//说明又一个新的开始了,因此切换binlog位置
                                     binlogFilename = lastXidLogFilename;
                                     binlogFileOffset = lastXidLogFileOffset;
                                 } else if (StringUtils.endsWithIgnoreCase(((QueryLogEvent) event).getQuery(), "COMMIT")) {

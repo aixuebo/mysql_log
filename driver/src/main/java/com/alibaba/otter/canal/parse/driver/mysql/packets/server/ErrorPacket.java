@@ -5,6 +5,7 @@ import java.io.IOException;
 import com.alibaba.otter.canal.parse.driver.mysql.packets.PacketWithHeaderPacket;
 import com.alibaba.otter.canal.parse.driver.mysql.utils.ByteHelper;
 
+//表示错误信息
 public class ErrorPacket extends PacketWithHeaderPacket {
 
     public byte   fieldCount;

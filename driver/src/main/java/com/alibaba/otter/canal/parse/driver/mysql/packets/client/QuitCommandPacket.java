@@ -7,7 +7,7 @@ import com.alibaba.otter.canal.parse.driver.mysql.packets.CommandPacket;
 
 /**
  * quit cmd
- * 
+ * 客户端发送退出命令
  * @author agapple 2016年3月1日 下午8:33:02
  * @since 1.0.22
  * 发送退出命令

@@ -60,6 +60,7 @@ import com.taobao.tddl.dbsync.binlog.event.mariadb.MariaGtidLogEvent;
  * 
  * @author <a href="mailto:changyuan.lh@taobao.com">Changyuan.lh</a>
  * @version 1.0
+ * 日志解码器,对收到的master的日志进行如何解析
  */
 public final class LogDecoder {
 

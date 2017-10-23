@@ -35,19 +35,20 @@ import com.google.common.collect.MigrateMap;
 public class SpringInstanceConfigMonitor extends AbstractCanalLifeCycle implements InstanceConfigMonitor, CanalLifeCycle {
 
     private static final Logger              logger               = LoggerFactory.getLogger(SpringInstanceConfigMonitor.class);
-    private String                           rootConf;
+    //目录 /rootConf/${destination}/instance.properties
+    private String                           rootConf;//目录--该目录下有若干个子目录,每一个destination都在该目录下产生一个新的目录
     // 扫描周期，单位秒
     private long                             scanIntervalInSecond = 5;
-    private InstanceAction                   defaultAction        = null;
-    private Map<String, InstanceAction>      actions              = new MapMaker().makeMap();
-    private Map<String, InstanceConfigFiles> lastFiles            = MigrateMap.makeComputingMap(new Function<String, InstanceConfigFiles>() {
+    private InstanceAction                   defaultAction        = null;//默认的加载配置文件的类
+    private Map<String, InstanceAction>      actions              = new MapMaker().makeMap();//每一个destination,用哪种行为方式去加载配置信息
+    private Map<String, InstanceConfigFiles> lastFiles            = MigrateMap.makeComputingMap(new Function<String, InstanceConfigFiles>() {//每一个destination 对应一个文件的详细信息
 
                                                                       public InstanceConfigFiles apply(String destination) {
                                                                           return new InstanceConfigFiles(destination);
                                                                       }
                                                                   });
     private ScheduledExecutorService         executor             = Executors.newScheduledThreadPool(1,
-                                                                      new NamedThreadFactory("canal-instance-scan"));
+                                                                      new NamedThreadFactory("canal-instance-scan"));//线程池
 
     public void start() {
         super.start();
@@ -95,11 +96,12 @@ public class SpringInstanceConfigMonitor extends AbstractCanalLifeCycle implemen
             return;
         }
 
+        //获取destination目录集合
         File[] instanceDirs = rootdir.listFiles(new FileFilter() {
 
-            public boolean accept(File pathname) {
+            public boolean accept(File pathname) {//true的是最终要的文件
                 String filename = pathname.getName();
-                return pathname.isDirectory() && !"spring".equalsIgnoreCase(filename);
+                return pathname.isDirectory() && !"spring".equalsIgnoreCase(filename);//要的是目录.并且排除spring这个目录
             }
         });
 
@@ -110,7 +112,7 @@ public class SpringInstanceConfigMonitor extends AbstractCanalLifeCycle implemen
         for (File instanceDir : instanceDirs) {
             String destination = instanceDir.getName();
             currentInstanceNames.add(destination);
-            File[] instanceConfigs = instanceDir.listFiles(new FilenameFilter() {
+            File[] instanceConfigs = instanceDir.listFiles(new FilenameFilter() {//找到目录下的instance.properties文件
 
                 public boolean accept(File dir, String name) {
                     // return !StringUtils.endsWithIgnoreCase(name, ".dat");
@@ -149,7 +151,7 @@ public class SpringInstanceConfigMonitor extends AbstractCanalLifeCycle implemen
 
         }
 
-        // 判断目录是否删除
+        // 判断目录是否删除--说有有一些destination已经不需要监控了
         Set<String> deleteInstanceNames = new HashSet<String>();
         for (String destination : actions.keySet()) {
             if (!currentInstanceNames.contains(destination)) {
@@ -196,9 +198,10 @@ public class SpringInstanceConfigMonitor extends AbstractCanalLifeCycle implemen
         }
     }
 
+    //判断文件是否有更改
     private boolean judgeFileChanged(File[] instanceConfigs, List<FileInfo> fileInfos) {
         boolean hasChanged = false;
-        for (File instanceConfig : instanceConfigs) {
+        for (File instanceConfig : instanceConfigs) {//所有的instance.properties
             for (FileInfo fileInfo : fileInfos) {
                 if (instanceConfig.getName().equals(fileInfo.getName())) {
                     hasChanged |= (instanceConfig.lastModified() != fileInfo.getLastModified());
@@ -267,6 +270,7 @@ public class SpringInstanceConfigMonitor extends AbstractCanalLifeCycle implemen
 
     }
 
+    //记录每一个文件的最后修改时间
     public static class FileInfo {
 
         private String name;

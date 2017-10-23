@@ -10,8 +10,8 @@ import java.util.List;
  */
 public class HaAuthenticationInfo {
 
-    private AuthenticationInfo       master;
-    private List<AuthenticationInfo> slavers = new ArrayList<AuthenticationInfo>();
+    private AuthenticationInfo       master;//连接数据库的主库信息
+    private List<AuthenticationInfo> slavers = new ArrayList<AuthenticationInfo>();//从库信息集合
 
     public AuthenticationInfo getMaster() {
         return master;

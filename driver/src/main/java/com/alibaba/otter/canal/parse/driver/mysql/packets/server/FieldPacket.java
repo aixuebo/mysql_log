@@ -6,6 +6,7 @@ import com.alibaba.otter.canal.parse.driver.mysql.packets.PacketWithHeaderPacket
 import com.alibaba.otter.canal.parse.driver.mysql.utils.ByteHelper;
 import com.alibaba.otter.canal.parse.driver.mysql.utils.LengthCodedStringReader;
 
+//表示mysql返回的查询的结果集中列的schema信息---该对象表示一个列的schema
 public class FieldPacket extends PacketWithHeaderPacket {
 
     private String catalog;

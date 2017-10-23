@@ -12,7 +12,9 @@ import com.alibaba.otter.canal.protocol.position.LogPosition;
  */
 public interface CanalLogPositionManager extends CanalLifeCycle {
 
+    //获取该目的地的LogPosition信息
     LogPosition getLatestIndexBy(String destination);
 
+    //存储destination的LogPosition信息
     void persistLogPosition(String destination, LogPosition logPosition) throws CanalParseException;
 }

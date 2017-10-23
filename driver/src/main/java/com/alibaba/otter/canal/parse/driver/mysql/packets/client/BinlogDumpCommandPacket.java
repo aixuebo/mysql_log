@@ -54,15 +54,15 @@ public class BinlogDumpCommandPacket extends CommandPacket {
      */
     public byte[] toBytes() throws IOException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        // 0. write command number 输入命令编码
+        // 0. write command number 输入命令编码,说明此时是binlog日志命令
         out.write(getCommand());
         // 1. write 4 bytes bin-log position to start at使用4个字节,发送要binlog的开始位置
         ByteHelper.writeUnsignedIntLittleEndian(binlogPosition, out);
-        // 2. write 2 bytes bin-log flags
+        // 2. write 2 bytes bin-log flags 写入2个字节的bin-log的标识符
         int binlog_flags = 0;
         binlog_flags |= BINLOG_SEND_ANNOTATE_ROWS_EVENT;//0 | 2 = 0 
         out.write(binlog_flags);
-        out.write(0x00);
+        out.write(0x00);//总是写入0,因为没有备注(猜测,未确定)
         // 3. write 4 bytes server id of the slave 写入slave节点ID标识符
         ByteHelper.writeUnsignedIntLittleEndian(this.slaveServerId, out);
         // 4. write bin-log file name if necessary //如果需要binlog文件名,则写入

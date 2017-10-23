@@ -5,6 +5,7 @@ package com.alibaba.otter.canal.deployer.monitor;
  * 
  * @author jianghang 2013-2-18 下午01:19:29
  * @version 1.0.1
+ * 当配置文件变化的时候,如何处理该配置文件
  */
 public interface InstanceAction {
 

@@ -399,6 +399,7 @@ public abstract class LogEvent {
 
     /**
      * The time when the query started, in seconds since 1970.
+     * 事件发生的时间戳
      */
     public final long getWhen() {
         return header.getWhen();

@@ -29,7 +29,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.MigrateMap;
 
 /**
- * 基于文件刷新的metaManager实现
+ * 基于文件刷新的metaManager实现----基于内存方式的一种扩充,即定期将内存的信息保存到文件中
  * 
  * <pre>
  * 策略：
@@ -44,20 +44,20 @@ public class FileMixedMetaManager extends MemoryMetaManager implements CanalMeta
 
     private static final Logger      logger       = LoggerFactory.getLogger(FileMixedMetaManager.class);
     private static final Charset     charset      = Charset.forName("UTF-8");
-    private File                     dataDir;
-    private String                   dataFileName = "meta.dat";
-    private Map<String, File>        dataFileCaches;
-    private ScheduledExecutorService executor;
+    private File                     dataDir;//文件所在的目录
+    private String                   dataFileName = "meta.dat";//文件名字   dataDir/destination/meta.dat
+    private Map<String, File>        dataFileCaches;//每一个destination 对应一个文件,即key是destination,value是File
+    private ScheduledExecutorService executor;//线程池对象
     @SuppressWarnings("serial")
     private final Position           nullCursor   = new Position() {
                                                   };
-    private long                     period       = 1000;                                               // 单位ms
-    private Set<ClientIdentity>      updateCursorTasks;
+    private long                     period       = 1000;                                               // 单位ms 每个周期执行线程池
+    private Set<ClientIdentity>      updateCursorTasks;//在周期内有变化的客户端,定期会对这些客户端进行save保存
 
     public void start() {
         super.start();
         Assert.notNull(dataDir);
-        if (!dataDir.exists()) {
+        if (!dataDir.exists()) {//创建目录
             try {
                 FileUtils.forceMkdir(dataDir);
             } catch (IOException e) {
@@ -77,6 +77,8 @@ public class FileMixedMetaManager extends MemoryMetaManager implements CanalMeta
         });
 
         executor = Executors.newScheduledThreadPool(1);
+
+        //加载destination的文件信息
         destinations = MigrateMap.makeComputingMap(new Function<String, List<ClientIdentity>>() {
 
             public List<ClientIdentity> apply(String destination) {
@@ -177,6 +179,7 @@ public class FileMixedMetaManager extends MemoryMetaManager implements CanalMeta
 
     // ============================ helper method ======================
 
+    //获取文件对象
     private File getDataFile(String destination) {
         File destinationMetaDir = new File(dataDir, destination);
         if (!destinationMetaDir.exists()) {
@@ -190,6 +193,7 @@ public class FileMixedMetaManager extends MemoryMetaManager implements CanalMeta
         return new File(destinationMetaDir, dataFileName);
     }
 
+    //加载一个文件
     private FileMetaInstanceData loadDataFromFile(File dataFile) {
         try {
             if (!dataFile.exists()) {
@@ -203,6 +207,7 @@ public class FileMixedMetaManager extends MemoryMetaManager implements CanalMeta
         }
     }
 
+    //刷新文件
     private void flushDataToFile() {
         for (String destination : destinations.keySet()) {
             flushDataToFile(destination);
@@ -213,6 +218,7 @@ public class FileMixedMetaManager extends MemoryMetaManager implements CanalMeta
         flushDataToFile(destination, dataFileCaches.get(destination));
     }
 
+    //刷新文件
     private void flushDataToFile(String destination, File dataFile) {
         FileMetaInstanceData data = new FileMetaInstanceData();
         if (destinations.containsKey(destination)) {
@@ -220,7 +226,7 @@ public class FileMixedMetaManager extends MemoryMetaManager implements CanalMeta
                 data.setDestination(destination);
 
                 List<FileMetaClientIdentityData> clientDatas = Lists.newArrayList();
-                List<ClientIdentity> clientIdentitys = destinations.get(destination);
+                List<ClientIdentity> clientIdentitys = destinations.get(destination);//该destination下所有的客户端集合
                 for (ClientIdentity clientIdentity : clientIdentitys) {
                     FileMetaClientIdentityData clientData = new FileMetaClientIdentityData();
                     clientData.setClientIdentity(clientIdentity);
@@ -235,6 +241,7 @@ public class FileMixedMetaManager extends MemoryMetaManager implements CanalMeta
                 data.setClientDatas(clientDatas);
             }
 
+            //对象转换成json写入到文件中
             String json = JsonUtils.marshalToString(data);
             try {
                 FileUtils.writeStringToFile(dataFile, json);
@@ -244,6 +251,7 @@ public class FileMixedMetaManager extends MemoryMetaManager implements CanalMeta
         }
     }
 
+    //加载一个destination文件
     private List<ClientIdentity> loadClientIdentity(String destination) {
         List<ClientIdentity> result = Lists.newArrayList();
 
@@ -291,11 +299,12 @@ public class FileMixedMetaManager extends MemoryMetaManager implements CanalMeta
      * 
      * @author jianghang 2013-4-15 下午06:19:40
      * @version 1.0.4
+     * 每一个客户端一个该对象
      */
     public static class FileMetaClientIdentityData {
 
-        private ClientIdentity clientIdentity;
-        private LogPosition    cursor;
+        private ClientIdentity clientIdentity;//客户端对象
+        private LogPosition    cursor;//该客户端锁对应的游标对象
 
         public FileMetaClientIdentityData(){
 
@@ -330,11 +339,12 @@ public class FileMixedMetaManager extends MemoryMetaManager implements CanalMeta
      * 
      * @author jianghang 2013-4-15 下午06:20:22
      * @version 1.0.4
+     * 每一个目的地destination对应一个该对象
      */
     public static class FileMetaInstanceData {
 
-        private String                           destination;
-        private List<FileMetaClientIdentityData> clientDatas;
+        private String                           destination;//属于哪个目的地
+        private List<FileMetaClientIdentityData> clientDatas;//该destination下所有的客户端集合
 
         public FileMetaInstanceData(){
 

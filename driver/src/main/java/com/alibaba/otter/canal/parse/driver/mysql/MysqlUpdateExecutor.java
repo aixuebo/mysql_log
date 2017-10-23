@@ -16,6 +16,7 @@ import com.alibaba.otter.canal.parse.driver.mysql.utils.PacketManager;
  * 
  * @author jianghang 2013-9-4 上午11:51:11
  * @since 1.0.0
+ * 执行mysql的命令,比如set wait_timeout=9999999
  */
 public class MysqlUpdateExecutor {
 
@@ -35,21 +36,22 @@ public class MysqlUpdateExecutor {
         this.channel = ch;
     }
 
+    //例如updateString为set wait_timeout=9999999
     public OKPacket update(String updateString) throws IOException {
-        QueryCommandPacket cmd = new QueryCommandPacket();
+        QueryCommandPacket cmd = new QueryCommandPacket();//发送命令sql
         cmd.setQueryString(updateString);
         byte[] bodyBytes = cmd.toBytes();
         PacketManager.write(channel, bodyBytes);
 
         logger.debug("read update result...");
-        byte[] body = PacketManager.readBytes(channel, PacketManager.readHeader(channel, 4).getPacketBodyLength());
+        byte[] body = PacketManager.readBytes(channel, PacketManager.readHeader(channel, 4).getPacketBodyLength());//等待mysql的response,获取response的字节长度 以及 内容
         if (body[0] < 0) {
             ErrorPacket packet = new ErrorPacket();
             packet.fromBytes(body);
             throw new IOException(packet + "\n with command: " + updateString);
         }
 
-        OKPacket packet = new OKPacket();
+        OKPacket packet = new OKPacket();//表示response返回的内容成功
         packet.fromBytes(body);
         return packet;
     }

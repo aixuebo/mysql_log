@@ -23,7 +23,11 @@ import com.google.common.collect.MigrateMap;
 
 /**
  * 基于定时刷新的策略的mixed实现
- * 
+ *
+ * 数据都保存在zookeeper中,因此每次初始化的时候都从zookeeper中可以获取,但是获取后存储在内存中,数据不更改的时候从内存中获取数据
+ * 即 此时相当于在zookeeper模式中添加了一个cache缓存层
+ * 优化方案是只更改有变化的客户端
+ *
  * <pre>
  * 几个优化：
  * 1. 去除batch数据刷新到zk中，切换时batch数据可忽略，重新从头开始获取
@@ -42,7 +46,7 @@ public class PeriodMixedMetaManager extends MemoryMetaManager implements CanalMe
     private final Position           nullCursor = new Position() {
                                                 };
     private long                     period     = 1000;                                                 // 单位ms
-    private Set<ClientIdentity>      updateCursorTasks;
+    private Set<ClientIdentity>      updateCursorTasks;//有更改的客户端,然后定期修改有更改的客户端即可
 
     public void start() {
         super.start();
@@ -52,6 +56,8 @@ public class PeriodMixedMetaManager extends MemoryMetaManager implements CanalMe
         }
 
         executor = Executors.newScheduledThreadPool(1);
+
+        //从zookeeper中加载此时的所有订阅的客户端信息
         destinations = MigrateMap.makeComputingMap(new Function<String, List<ClientIdentity>>() {
 
             public List<ClientIdentity> apply(String destination) {
