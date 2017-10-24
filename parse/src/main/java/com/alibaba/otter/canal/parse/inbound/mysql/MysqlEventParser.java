@@ -547,6 +547,7 @@ public class MysqlEventParser extends AbstractMysqlEventParser implements CanalE
 
     /**
      * 查询当前的binlog位置
+     * 返回此时master的binlog写到哪个位置了
      */
     private EntryPosition findEndPosition(MysqlConnection mysqlConnection) {
         try {
@@ -555,7 +556,7 @@ public class MysqlEventParser extends AbstractMysqlEventParser implements CanalE
             if (CollectionUtils.isEmpty(fields)) {
                 throw new CanalParseException("command : 'show master status' has an error! pls check. you need (at least one of) the SUPER,REPLICATION CLIENT privilege(s) for this operation");
             }
-            EntryPosition endPosition = new EntryPosition(fields.get(0), Long.valueOf(fields.get(1)));
+            EntryPosition endPosition = new EntryPosition(fields.get(0), Long.valueOf(fields.get(1)));//获取binlog文件以及POSITION
             return endPosition;
         } catch (IOException e) {
             throw new CanalParseException("command : 'show master status' has an error!", e);
@@ -582,14 +583,15 @@ public class MysqlEventParser extends AbstractMysqlEventParser implements CanalE
 
     /**
      * 查询当前的slave视图的binlog位置
+     * 通过下面四个属性,可以知道该slave读取到master哪个binlog文件,哪个偏移量位置了,以及master的host和port是什么
      */
     @SuppressWarnings("unused")
     private SlaveEntryPosition findSlavePosition(MysqlConnection mysqlConnection) {
         try {
             ResultSetPacket packet = mysqlConnection.query("show slave status");
-            List<FieldPacket> names = packet.getFieldDescriptors();
-            List<String> fields = packet.getFieldValues();
-            if (CollectionUtils.isEmpty(fields)) {
+            List<FieldPacket> names = packet.getFieldDescriptors();//结果集的schema信息
+            List<String> fields = packet.getFieldValues();//结果集
+            if (CollectionUtils.isEmpty(fields)) {//说明没有结果集
                 return null;
             }
 

@@ -93,7 +93,7 @@ public abstract class LogEvent {
     public static final int    START_EVENT_V3                           = 1;
     public static final int    QUERY_EVENT                              = 2;//查询事件
     public static final int    STOP_EVENT                               = 3;
-    public static final int    ROTATE_EVENT                             = 4;
+    public static final int    ROTATE_EVENT                             = 4;//说明是转换binlog日志事件
     public static final int    INTVAR_EVENT                             = 5;
     public static final int    LOAD_EVENT                               = 6;
     public static final int    SLAVE_EVENT                              = 7;

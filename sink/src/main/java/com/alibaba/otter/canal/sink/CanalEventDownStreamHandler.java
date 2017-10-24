@@ -3,7 +3,7 @@ package com.alibaba.otter.canal.sink;
 import com.alibaba.otter.canal.common.CanalLifeCycle;
 
 /**
- * 处理下sink时的数据流
+ * 处理下sink时的数据流---相当于一个拦截器
  * 
  * @author jianghang 2012-7-31 下午03:06:26
  * @version 1.0.0

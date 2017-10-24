@@ -9,7 +9,7 @@ package com.alibaba.otter.canal.protocol.position;
 public class TimePosition extends Position {
 
     private static final long serialVersionUID = 6185261261064226380L;
-    protected Long            timestamp;
+    protected Long            timestamp;//基于binlog的时间戳
 
     public TimePosition(Long timestamp){
         this.timestamp = timestamp;

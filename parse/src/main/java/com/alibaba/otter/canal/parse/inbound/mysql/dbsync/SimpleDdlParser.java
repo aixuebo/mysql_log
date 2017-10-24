@@ -23,15 +23,15 @@ import com.alibaba.otter.canal.protocol.CanalEntry.EventType;
  */
 public class SimpleDdlParser {
 
-    public static final String CREATE_PATTERN         = "^\\s*CREATE\\s*(TEMPORARY)?\\s*TABLE\\s*(.*)$";
+    public static final String CREATE_PATTERN         = "^\\s*CREATE\\s*(TEMPORARY)?\\s*TABLE\\s*(.*)$";//创建表
     public static final String DROP_PATTERN           = "^\\s*DROP\\s*(TEMPORARY)?\\s*TABLE\\s*(.*)$";
     public static final String ALERT_PATTERN          = "^\\s*ALTER\\s*(IGNORE)?\\s*TABLE\\s*(.*)$";
     public static final String TRUNCATE_PATTERN       = "^\\s*TRUNCATE\\s*(TABLE)?\\s*(.*)$";
-    public static final String TABLE_PATTERN          = "^(IF\\s*NOT\\s*EXISTS\\s*)?(IF\\s*EXISTS\\s*)?(`?.+?`?[;\\(\\s]+?)?.*$";         // 采用非贪婪模式
+    public static final String TABLE_PATTERN          = "^(IF\\s*NOT\\s*EXISTS\\s*)?(IF\\s*EXISTS\\s*)?(`?.+?`?[;\\(\\s]+?)?.*$";         // 采用非贪婪模式  获取tableName
     public static final String INSERT_PATTERN         = "^\\s*(INSERT|MERGE|REPLACE)(.*)$";
     public static final String UPDATE_PATTERN         = "^\\s*UPDATE(.*)$";
     public static final String DELETE_PATTERN         = "^\\s*DELETE(.*)$";
-    public static final String RENAME_PATTERN         = "^\\s*RENAME\\s+TABLE\\s+(.+?)\\s+TO\\s+(.+?)$";
+    public static final String RENAME_PATTERN         = "^\\s*RENAME\\s+TABLE\\s+(.+?)\\s+TO\\s+(.+?)$"; //重命名
     public static final String RENAME_REMNANT_PATTERN = "^\\s*(.+?)\\s+TO\\s+(.+?)$";
 
     /**
@@ -160,7 +160,7 @@ public class SimpleDdlParser {
 
     private static DdlResult parseTableName(String matchString, String schmeaName) {
         Perl5Matcher tableMatcher = new Perl5Matcher();
-        matchString = matchString + " ";
+        matchString = matchString + " ";//追加一个空格
         if (tableMatcher.matches(matchString, PatternUtils.getPattern(TABLE_PATTERN))) {
             String tableString = tableMatcher.getMatch().group(3);
             if (StringUtils.isEmpty(tableString)) {
@@ -188,12 +188,14 @@ public class SimpleDdlParser {
         return null;
     }
 
+    //将字符串如果以''开头和结尾的,则删除掉这两个字符
     private static String removeEscape(String str) {
         String result = StringUtils.removeEnd(str, "`");
         result = StringUtils.removeStart(result, "`");
         return result;
     }
 
+    //删除/* */之间的备注信息
     private static String removeComment(String sql) {
         if (sql == null) {
             return null;

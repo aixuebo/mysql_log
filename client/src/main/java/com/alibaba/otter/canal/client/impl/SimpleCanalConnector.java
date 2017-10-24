@@ -54,9 +54,9 @@ public class SimpleCanalConnector implements CanalConnector {
     private int                  soTimeout             = 60000;                                              // milliseconds
     private String               filter;                                                                     // 记录上一次的filter提交值,便于自动重试时提交
 
-    private final ByteBuffer     readHeader            = ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN);
-    private final ByteBuffer     writeHeader           = ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN);
-    private SocketChannel        channel;
+    private final ByteBuffer     readHeader            = ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN);//头字节---因此是4个字节
+    private final ByteBuffer     writeHeader           = ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN);//头字节---因此是4个字节
+    private SocketChannel        channel;//连接服务器的通道--本地属于客户端
     private List<Compression>    supportedCompressions = new ArrayList<Compression>();
     private ClientIdentity       clientIdentity;
     private ClientRunningMonitor runningMonitor;                                                             // 运行控制
@@ -125,12 +125,12 @@ public class SimpleCanalConnector implements CanalConnector {
         try {
             channel = SocketChannel.open();
             channel.socket().setSoTimeout(soTimeout);
-            SocketAddress address = getAddress();
+            SocketAddress address = getAddress();//获取服务器地址
             if (address == null) {
                 address = getNextAddress();
             }
             channel.connect(address);
-            Packet p = Packet.parseFrom(readNextPacket(channel));
+            Packet p = Packet.parseFrom(readNextPacket(channel));//将数据还原成Packet对象
             if (p.getVersion() != 1) {
                 throw new CanalClientException("unsupported version at this client.");
             }
@@ -353,17 +353,18 @@ public class SimpleCanalConnector implements CanalConnector {
     private void writeWithHeader(SocketChannel channel, byte[] body) throws IOException {
         synchronized (writeDataLock) {
             writeHeader.clear();
-            writeHeader.putInt(body.length);
+            writeHeader.putInt(body.length);//写入多少个字节的body
             writeHeader.flip();
             channel.write(writeHeader);
-            channel.write(ByteBuffer.wrap(body));
+            channel.write(ByteBuffer.wrap(body));//写入具体body内容
         }
     }
 
+    //读取下一个包的内容
     private byte[] readNextPacket(SocketChannel channel) throws IOException {
         synchronized (readDataLock) {
             readHeader.clear();
-            read(channel, readHeader);
+            read(channel, readHeader);//填充头信息
             int bodyLen = readHeader.getInt(0);
             ByteBuffer bodyBuf = ByteBuffer.allocate(bodyLen).order(ByteOrder.BIG_ENDIAN);
             read(channel, bodyBuf);
@@ -371,6 +372,7 @@ public class SimpleCanalConnector implements CanalConnector {
         }
     }
 
+    //读满buffer数据
     private void read(SocketChannel channel, ByteBuffer buffer) throws IOException {
         while (buffer.hasRemaining()) {
             int r = channel.read(buffer);

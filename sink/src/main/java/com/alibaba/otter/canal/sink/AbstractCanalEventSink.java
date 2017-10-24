@@ -15,7 +15,7 @@ public abstract class AbstractCanalEventSink<T> extends AbstractCanalLifeCycle i
 	//事件过滤器
     protected CanalEventFilter                  filter;
     
-    //拦截器集合,当处理事件的时候,要以此调用该集合
+    //拦截器集合,当处理事件的时候,要以此调用该集合----拦截器是有顺序的
     protected List<CanalEventDownStreamHandler> handlers = new ArrayList<CanalEventDownStreamHandler>();
 
     public void setFilter(CanalEventFilter filter) {

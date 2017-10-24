@@ -90,12 +90,12 @@ public class EntryEventSink extends AbstractCanalEventSink<List<CanalEntry.Entry
 
     private boolean sinkData(List<CanalEntry.Entry> entrys, InetSocketAddress remoteAddress)
                                                                                             throws InterruptedException {
-        boolean hasRowData = false;
-        boolean hasHeartBeat = false;
-        List<Event> events = new ArrayList<Event>();
+        boolean hasRowData = false;//true表示有行事件
+        boolean hasHeartBeat = false;//true表示有心跳事件
+        List<Event> events = new ArrayList<Event>();//通过的事件集合
         for (CanalEntry.Entry entry : entrys) {
             Event event = new Event(new LogIdentity(remoteAddress, -1L), entry);
-            if (!doFilter(event)) {
+            if (!doFilter(event)) {//如果一个事件是过滤器返回false,则说明不需要存储该事件,因此continue处理下一个事件
                 continue;
             }
 
@@ -128,6 +128,8 @@ public class EntryEventSink extends AbstractCanalEventSink<List<CanalEntry.Entry
         }
     }
 
+    //对数据库.table进行过滤
+    //true表示过滤成功,选择要处理该表
     protected boolean doFilter(Event event) {
         if (filter != null && event.getEntry().getEntryType() == EntryType.ROWDATA) {
             String name = getSchemaNameAndTableName(event.getEntry());
@@ -180,6 +182,7 @@ public class EntryEventSink extends AbstractCanalEventSink<List<CanalEntry.Entry
 
     }
 
+    //返回数据库.table名字
     private String getSchemaNameAndTableName(CanalEntry.Entry entry) {
         return entry.getHeader().getSchemaName() + "." + entry.getHeader().getTableName();
     }

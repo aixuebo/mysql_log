@@ -66,11 +66,12 @@ public final class LogDecoder {
 
     protected static final Log logger    = LogFactory.getLog(LogDecoder.class);
 
-    protected final BitSet     handleSet = new BitSet(LogEvent.ENUM_END_EVENT);
+    protected final BitSet  handleSet = new BitSet(LogEvent.ENUM_END_EVENT);//设置一个容器---该容器表示事件ID,如果事件ID可以处理,则设置为1
 
     public LogDecoder(){
     }
 
+    //将fromIndex到toIndex的位置都设置为1
     public LogDecoder(final int fromIndex, final int toIndex){
         handleSet.set(fromIndex, toIndex);
     }
@@ -79,6 +80,7 @@ public final class LogDecoder {
         handleSet.set(fromIndex, toIndex);
     }
 
+    //将flagIndex位置设置为1
     public final void handle(final int flagIndex) {
         handleSet.set(flagIndex);
     }
@@ -100,7 +102,7 @@ public final class LogDecoder {
                 LogEvent event;
 
                 /* Checking binary-log's header */
-                if (handleSet.get(header.getType())) {
+                if (handleSet.get(header.getType())) {//获取该事件是否是要解析的
                     buffer.limit(len);//将buffer的limit有效字节位置设置为跟该事件有关系的字节数
                     try {
                         /* Decoding binary-log to event */

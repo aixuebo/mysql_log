@@ -86,6 +86,7 @@ public class MysqlConnection implements ErosaConnection {
         DirectLogFetcher fetcher = new DirectLogFetcher(connector.getReceiveBufferSize());//创建抓去master日志的对象
         fetcher.start(connector.getChannel());
         LogDecoder decoder = new LogDecoder();//日志解码器
+        //设置要解析哪些事件
         decoder.handle(LogEvent.ROTATE_EVENT);
         decoder.handle(LogEvent.FORMAT_DESCRIPTION_EVENT);
         decoder.handle(LogEvent.QUERY_EVENT);

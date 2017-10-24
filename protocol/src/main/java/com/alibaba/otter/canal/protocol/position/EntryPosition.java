@@ -13,8 +13,8 @@ public class EntryPosition extends TimePosition {
     public static final char  EVENTIDENTITY_SPLIT   = (char) 5;
 
     private boolean           included              = false;
-    private String            journalName;
-    private Long              position;
+    private String            journalName;//binlog文件
+    private Long              position;//binlog文件的偏移量位置
 
     public EntryPosition(){
         super(null);

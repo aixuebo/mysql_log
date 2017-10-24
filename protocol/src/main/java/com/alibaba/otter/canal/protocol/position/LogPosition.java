@@ -10,7 +10,7 @@ public class LogPosition extends Position {
 
     private static final long serialVersionUID = 3875012010277005819L;
     private LogIdentity       identity;
-    private EntryPosition     postion;
+    private EntryPosition     postion;//哪个binlog文件以及对应的偏移量
 
     public LogIdentity getIdentity() {
         return identity;
