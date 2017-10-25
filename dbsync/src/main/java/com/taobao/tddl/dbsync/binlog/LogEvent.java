@@ -75,12 +75,13 @@ public abstract class LogEvent {
 
     /**
      * Event header offsets; these point to places inside the fixed header.
+     * 表示头文件的一些信息的开始位置
      */
-    public static final int    EVENT_TYPE_OFFSET                        = 4;
-    public static final int    SERVER_ID_OFFSET                         = 5;
+    public static final int    EVENT_TYPE_OFFSET                        = 4;//获取事件类型
+    public static final int    SERVER_ID_OFFSET                         = 5;//获取产生事件的服务器ID
     public static final int    EVENT_LEN_OFFSET                         = 9;//在第9位置上,有一个int,表示一共多少个字节是有效的
-    public static final int    LOG_POS_OFFSET                           = 13;
-    public static final int    FLAGS_OFFSET                             = 17;
+    public static final int    LOG_POS_OFFSET                           = 13;//获取下一个事件的位置
+    public static final int    FLAGS_OFFSET                             = 17;//获取flag标识符号
 
     /* event-specific post-header sizes */
     // where 3.23, 4.x and 5.0 agree
@@ -110,7 +111,7 @@ public abstract class LogEvent {
     public static final int    NEW_LOAD_EVENT                           = 12;
     public static final int    RAND_EVENT                               = 13;
     public static final int    USER_VAR_EVENT                           = 14;
-    public static final int    FORMAT_DESCRIPTION_EVENT                 = 15;
+    public static final int    FORMAT_DESCRIPTION_EVENT                 = 15;//说明是格式描述事件
     public static final int    XID_EVENT                                = 16;
     public static final int    BEGIN_LOAD_QUERY_EVENT                   = 17;
     public static final int    EXECUTE_LOAD_QUERY_EVENT                 = 18;
@@ -190,7 +191,7 @@ public abstract class LogEvent {
     public static final int    GTID_LIST_EVENT                          = 163;
 
     /** end marker */
-    public static final int    ENUM_END_EVENT                           = 164;
+    public static final int    ENUM_END_EVENT                           = 164;//事件类型的最终位置
 
     /**
      * 1 byte length, 1 byte format Length is total length in bytes, including 2
@@ -202,22 +203,22 @@ public abstract class LogEvent {
     public static final int    EXTRA_ROW_INFO_MAX_PAYLOAD               = (255 - EXTRA_ROW_INFO_HDR_BYTES);
 
     // Events are without checksum though its generator
-    public static final int    BINLOG_CHECKSUM_ALG_OFF                  = 0;
+    public static final int    BINLOG_CHECKSUM_ALG_OFF                  = 0;//表示事件不产生校验和
     // is checksum-capable New Master (NM).
     // CRC32 of zlib algorithm.
     public static final int    BINLOG_CHECKSUM_ALG_CRC32                = 1;
     // the cut line: valid alg range is [1, 0x7f].
     public static final int    BINLOG_CHECKSUM_ALG_ENUM_END             = 2;
-    // special value to tag undetermined yet checksum
+    // special value to tag undetermined yet checksum 表示不确定要计算校验和
     public static final int    BINLOG_CHECKSUM_ALG_UNDEF                = 255;
     // or events from checksum-unaware servers
 
-    public static final int    CHECKSUM_CRC32_SIGNATURE_LEN             = 4;
-    public static final int    BINLOG_CHECKSUM_ALG_DESC_LEN             = 1;
+    public static final int    CHECKSUM_CRC32_SIGNATURE_LEN             = 4;//校验和内容所占用的字节数
+    public static final int    BINLOG_CHECKSUM_ALG_DESC_LEN             = 1;//校验和算法
     /**
      * defined statically while there is just one alg implemented
      */
-    public static final int    BINLOG_CHECKSUM_LEN                      = CHECKSUM_CRC32_SIGNATURE_LEN;
+    public static final int    BINLOG_CHECKSUM_LEN                      = CHECKSUM_CRC32_SIGNATURE_LEN;//校验和内容所占用的字节数
 
     /* MySQL or old MariaDB slave with no announced capability. */
     public static final int    MARIA_SLAVE_CAPABILITY_UNKNOWN           = 0;
@@ -246,7 +247,7 @@ public abstract class LogEvent {
      */
     public static final int    LOG_EVENT_IGNORABLE_F                    = 0x80;
 
-    /** enum_field_types */
+    /** enum_field_types 列的属性映射集合*/
     public static final int    MYSQL_TYPE_DECIMAL                       = 0;
     public static final int    MYSQL_TYPE_TINY                          = 1;
     public static final int    MYSQL_TYPE_SHORT                         = 2;
@@ -358,7 +359,7 @@ public abstract class LogEvent {
 
     protected static final Log logger = LogFactory.getLog(LogEvent.class);
 
-    protected final LogHeader  header;
+    protected final LogHeader  header;//事件的19个字节表示的公共头信息
 
     protected LogEvent(LogHeader header){
         this.header = header;

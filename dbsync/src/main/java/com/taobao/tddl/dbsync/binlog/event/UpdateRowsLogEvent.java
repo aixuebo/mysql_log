@@ -7,7 +7,10 @@ import com.taobao.tddl.dbsync.binlog.LogBuffer;
  * for a table. Note that each event contains only rows for one table. Also note
  * that the row data consists of pairs of row data: one row for the old data and
  * one row for the new data.
- * 
+ *
+ * 这些行数据表示的是发生更新的行数据
+ * 所有数据都只能来自于一个表
+ * 行数据组成是由老数据和新数据一组键值对方式组成的
  * @author <a href="mailto:changyuan.lh@taobao.com">Changyuan.lh</a>
  * @version 1.0
  */

@@ -30,6 +30,12 @@ import com.taobao.tddl.dbsync.binlog.LogEvent;
  * 
  * @author <a href="mailto:changyuan.lh@taobao.com">Changyuan.lh</a>
  * @version 1.0
+ *
+ * last_insert_id()来获得最近insert的那行记录的自增字段值
+ *
+ * 设置变量INSERT_ID的值,
+ * 1个字节的类型LAST_INSERT_ID_EVENT==1 and INSERT_ID_EVENT==2.
+ * 8个字节的具体的值
  */
 public final class IntvarLogEvent extends LogEvent {
 

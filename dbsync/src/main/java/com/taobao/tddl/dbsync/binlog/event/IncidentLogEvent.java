@@ -8,6 +8,9 @@ import com.taobao.tddl.dbsync.binlog.LogEvent;
  * happened on the master. The event is used to inform the slave that something
  * out of the ordinary happened on the master that might cause the database to
  * be in an inconsistent state.
+ * 代表一个小插曲事件,一个不寻常的发生了该事件,此事件发生在master上
+ *
+ *
  * <table id="IncidentFormat">
  * <caption>Incident event format</caption>
  * <tr>
@@ -45,8 +48,8 @@ public final class IncidentLogEvent extends LogEvent {
     /** Shall be last event of the enumeration */
     public static final int INCIDENT_COUNT       = 2;
 
-    private final int       incident;
-    private final String    message;
+    private final int       incident;//异常数量
+    private final String    message;//异常的信息
 
     public IncidentLogEvent(LogHeader header, LogBuffer buffer, FormatDescriptionLogEvent descriptionEvent){
         super(header);
@@ -55,7 +58,7 @@ public final class IncidentLogEvent extends LogEvent {
         final int postHeaderLen = descriptionEvent.postHeaderLen[header.type - 1];
 
         buffer.position(commonHeaderLen);
-        final int incidentNumber = buffer.getUint16();
+        final int incidentNumber = buffer.getUint16();//事件个数
         if (incidentNumber >= INCIDENT_COUNT || incidentNumber <= INCIDENT_NONE) {
             // If the incident is not recognized, this binlog event is
             // invalid. If we set incident_number to INCIDENT_NONE, the

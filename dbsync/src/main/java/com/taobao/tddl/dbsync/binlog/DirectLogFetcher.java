@@ -35,13 +35,14 @@ import org.apache.commons.logging.LogFactory;
  * @author <a href="mailto:changyuan.lh@taobao.com">Changyuan.lh</a>
  * @version 1.0
  * 通过JDBC等直接方式,去连接mysql,获取binlog等信息,而不是直接读取binlog文件了
+ * 使用socket协议,不是使用mysql的命令行
  */
 public final class DirectLogFetcher extends LogFetcher {
 
     protected static final Log logger                          = LogFactory.getLog(DirectLogFetcher.class);
 
     /** Command to dump binlog */
-    public static final byte   COM_BINLOG_DUMP                 = 18;//设置binlog的信息
+    public static final byte   COM_BINLOG_DUMP                 = 18;//设置binlog的信息--表示要发送dump命令
 
     /** Packet header sizes */
     public static final int    NET_HEADER_SIZE                 = 4;//包头文件的大小
@@ -155,7 +156,7 @@ public final class DirectLogFetcher extends LogFetcher {
      * Connect MySQL master to fetch binlog.
      */
     public void open(Connection conn, String fileName, final int serverId) throws IOException {
-        open(conn, fileName, BIN_LOG_HEADER_SIZE, serverId, false);
+        open(conn, fileName, BIN_LOG_HEADER_SIZE, serverId, false);//表示从4开始读取数据,因为前4个字节是魔,不是binlog的position
     }
 
     /**
@@ -174,6 +175,7 @@ public final class DirectLogFetcher extends LogFetcher {
 
     /**
      * Connect MySQL master to fetch binlog.
+     * 打开一个连接,读取服务器上哪个binlog,以及从哪个位置开始读取事件
      */
     public void open(Connection conn, String fileName, long filePosition, final int serverId, boolean nonBlocking)
                                                                                                                   throws IOException {
@@ -268,7 +270,7 @@ public final class DirectLogFetcher extends LogFetcher {
                                         boolean nonBlocking) throws IOException {
         position = NET_HEADER_SIZE;
 
-        putByte(COM_BINLOG_DUMP);//设置binlog的一些信息
+        putByte(COM_BINLOG_DUMP);//说明要发送dump命令
         putInt32(filePosition);
         int binlog_flags = nonBlocking ? BINLOG_DUMP_NON_BLOCK : 0;
         binlog_flags |= BINLOG_SEND_ANNOTATE_ROWS_EVENT;
@@ -277,7 +279,7 @@ public final class DirectLogFetcher extends LogFetcher {
         putString(fileName);
 
         final byte[] buf = buffer;
-        final int len = position - NET_HEADER_SIZE;
+        final int len = position - NET_HEADER_SIZE;//设置处理命令之外的数据包长度
         buf[0] = (byte) (len & 0xff);
         buf[1] = (byte) (len >>> 8);
         buf[2] = (byte) (len >>> 16);

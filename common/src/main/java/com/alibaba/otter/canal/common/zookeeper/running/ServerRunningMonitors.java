@@ -10,7 +10,9 @@ import java.util.Map;
  */
 public class ServerRunningMonitors {
 
+
     private static ServerRunningData serverData;
+    //每一个destination 对应一个监听器,即每一个destination应该有一个活跃的节点
     private static Map               runningMonitors; // <String,
                                                       // ServerRunningMonitor>
 

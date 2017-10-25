@@ -95,9 +95,9 @@ public final class LogDecoder {
         final int limit = buffer.limit();
 
         if (limit >= FormatDescriptionLogEvent.LOG_EVENT_HEADER_LEN) {//必须有这么多字节可用,否则不能组织成事件对象
-            LogHeader header = new LogHeader(buffer, context.getFormatDescription());
+            LogHeader header = new LogHeader(buffer, context.getFormatDescription());//解析头信息
 
-            final int len = header.getEventLen();//事件长度
+            final int len = header.getEventLen();//事件总长度
             if (limit >= len) {
                 LogEvent event;
 
@@ -140,24 +140,24 @@ public final class LogDecoder {
         FormatDescriptionLogEvent descriptionEvent = context.getFormatDescription();
         LogPosition logPosition = context.getLogPosition();
 
-        int checksumAlg = LogEvent.BINLOG_CHECKSUM_ALG_UNDEF;
-        if (header.getType() != LogEvent.FORMAT_DESCRIPTION_EVENT) {
+        int checksumAlg = LogEvent.BINLOG_CHECKSUM_ALG_UNDEF;//校验和算法
+        if (header.getType() != LogEvent.FORMAT_DESCRIPTION_EVENT) {//不是描述对象,则获取该校验和算法
             checksumAlg = descriptionEvent.header.getChecksumAlg();
         } else {
             // 如果是format事件自己，也需要处理checksum
-            checksumAlg = header.getChecksumAlg();
+            checksumAlg = header.getChecksumAlg();//计算校验和算法
         }
 
-        if (checksumAlg != LogEvent.BINLOG_CHECKSUM_ALG_OFF && checksumAlg != LogEvent.BINLOG_CHECKSUM_ALG_UNDEF) {
+        if (checksumAlg != LogEvent.BINLOG_CHECKSUM_ALG_OFF && checksumAlg != LogEvent.BINLOG_CHECKSUM_ALG_UNDEF) {//说明有校验和
             // remove checksum bytes
-            buffer.limit(header.getEventLen() - LogEvent.BINLOG_CHECKSUM_LEN);
+            buffer.limit(header.getEventLen() - LogEvent.BINLOG_CHECKSUM_LEN);//刨除校验和内容
         }
 
         switch (header.getType()) {
             case LogEvent.QUERY_EVENT: {
                 QueryLogEvent event = new QueryLogEvent(header, buffer, descriptionEvent);
                 /* updating position in context */
-                logPosition.position = header.getLogPos();
+                logPosition.position = header.getLogPos();//更新下一次要获取哪个位置的master上的日志
                 return event;
             }
             case LogEvent.XID_EVENT: {

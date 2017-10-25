@@ -4,15 +4,15 @@ import com.taobao.tddl.dbsync.binlog.LogBuffer;
 
 /**
  * Create_file_log_event.
- * 
+ * 创建了一个文件?暂时不知道怎么创建的
  * @author <a href="mailto:changyuan.lh@taobao.com">Changyuan.lh</a>
  * @version 1.0
  */
 public final class CreateFileLogEvent extends LoadLogEvent {
 
-    protected LogBuffer     blockBuf;
-    protected int           blockLen;
-    protected long          fileId;
+    protected LogBuffer     blockBuf;//文件的具体内容
+    protected int           blockLen;//文件的内容长度
+    protected long          fileId;//创建的文件ID
 
     protected boolean       initedFromOld;
 

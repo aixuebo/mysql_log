@@ -31,7 +31,7 @@ public class ServerRunningMonitor extends AbstractCanalLifeCycle {
     private static final Logger        logger       = LoggerFactory.getLogger(ServerRunningMonitor.class);
     private ZkClientx                  zkClient;
     private String                     destination;
-    private IZkDataListener            dataListener;
+    private IZkDataListener            dataListener;//如果监听的节点发生变化的时候,该如何处理
     private BooleanMutex               mutex        = new BooleanMutex(false);
     private volatile boolean           release      = false;
     // 当前服务节点状态信息
@@ -40,7 +40,7 @@ public class ServerRunningMonitor extends AbstractCanalLifeCycle {
     private volatile ServerRunningData activeData;
     private ScheduledExecutorService   delayExector = Executors.newScheduledThreadPool(1);
     private int                        delayTime    = 5;
-    private ServerRunningListener      listener;
+    private ServerRunningListener      listener;//server的运行监听进行监控
 
     public ServerRunningMonitor(ServerRunningData serverData){
         this();
@@ -48,16 +48,18 @@ public class ServerRunningMonitor extends AbstractCanalLifeCycle {
     }
 
     public ServerRunningMonitor(){
-        // 创建父节点
+        // 创建父节点---如果监听的节点发生变化的时候,该如何处理
         dataListener = new IZkDataListener() {
 
+            //说明zookeeper上路径的内容发生变化了,参数data就是变化后的内容
             public void handleDataChange(String dataPath, Object data) throws Exception {
                 MDC.put("destination", destination);
-                ServerRunningData runningData = JsonUtils.unmarshalFromByte((byte[]) data, ServerRunningData.class);
+                ServerRunningData runningData = JsonUtils.unmarshalFromByte((byte[]) data, ServerRunningData.class);//将变化后的内容转换成ServerRunningData对象
                 if (!isMine(runningData.getAddress())) {
-                    mutex.set(false);
+                    mutex.set(false);//说明活跃的节点不是自己
                 }
 
+                //说明自己不是活跃的了
                 if (!runningData.isActive() && isMine(runningData.getAddress())) { // 说明出现了主动释放的操作，并且本机之前是active
                     release = true;
                     releaseRunning();// 彻底释放mainstem
@@ -93,7 +95,7 @@ public class ServerRunningMonitor extends AbstractCanalLifeCycle {
         if (zkClient != null) {
             // 如果需要尽可能释放instance资源，不需要监听running节点，不然即使stop了这台机器，另一台机器立马会start
             String path = ZookeeperPathUtils.getDestinationServerRunning(destination);
-            zkClient.subscribeDataChanges(path, dataListener);
+            zkClient.subscribeDataChanges(path, dataListener);//监听该节点
 
             initRunning();
         } else {
@@ -114,7 +116,7 @@ public class ServerRunningMonitor extends AbstractCanalLifeCycle {
 
         if (zkClient != null) {
             String path = ZookeeperPathUtils.getDestinationServerRunning(destination);
-            zkClient.unsubscribeDataChanges(path, dataListener);
+            zkClient.unsubscribeDataChanges(path, dataListener);//取消监听
 
             releaseRunning(); // 尝试一下release
         } else {
@@ -123,11 +125,13 @@ public class ServerRunningMonitor extends AbstractCanalLifeCycle {
         processStop();
     }
 
+    //不断的递归调用该方法,直到找到活跃的节点为止
     private void initRunning() {
         if (!isStart()) {
             return;
         }
 
+        //将当前节点的信息转换成字节数组,添加到zookeeper上,表示此时该节点为活跃节点
         String path = ZookeeperPathUtils.getDestinationServerRunning(destination);
         // 序列化
         byte[] bytes = JsonUtils.marshalToByte(serverData);
@@ -137,7 +141,7 @@ public class ServerRunningMonitor extends AbstractCanalLifeCycle {
             activeData = serverData;
             processActiveEnter();// 触发一下事件
             mutex.set(true);
-        } catch (ZkNodeExistsException e) {
+        } catch (ZkNodeExistsException e) {//说明该节点上已经存在了
             bytes = zkClient.readData(path, true);
             if (bytes == null) {// 如果不存在节点，立即尝试一次
                 initRunning();
@@ -156,14 +160,18 @@ public class ServerRunningMonitor extends AbstractCanalLifeCycle {
      * @throws InterruptedException
      */
     public void waitForActive() throws InterruptedException {
-        initRunning();
-        mutex.get();
+        initRunning();//递归调用,直到自己是活跃节点为止
+        mutex.get();//false会阻塞.直到返回true为止
     }
 
     /**
      * 检查当前的状态
+     * 1.获取zookeeper上当前活跃的serfer节点
+     * 2.检查活跃的节点是否是当前节点
+     * true表示检查成功,活跃的节点就是当前节点
      */
     public boolean check() {
+        //读取zookeeper下当前活跃的节点对象
         String path = ZookeeperPathUtils.getDestinationServerRunning(destination);
         try {
             byte[] bytes = zkClient.readData(path);
@@ -171,7 +179,7 @@ public class ServerRunningMonitor extends AbstractCanalLifeCycle {
             activeData = eventData;// 更新下为最新值
             // 检查下nid是否为自己
             boolean result = isMine(activeData.getAddress());
-            if (!result) {
+            if (!result) {//说明不是当前节点,因此打印日志说canal正在运行在哪个节点上,但是不是本节点
                 logger.warn("canal is running in node[{}] , but not in node[{}]",
                     activeData.getCid(),
                     serverData.getCid());
@@ -190,12 +198,13 @@ public class ServerRunningMonitor extends AbstractCanalLifeCycle {
         }
     }
 
+    //让该节点去释放,即从活跃节点到不活跃
     private boolean releaseRunning() {
-        if (check()) {
-            String path = ZookeeperPathUtils.getDestinationServerRunning(destination);
+        if (check()) {//确保自己首先是活跃的
+            String path = ZookeeperPathUtils.getDestinationServerRunning(destination);//删除zookeeper
             zkClient.delete(path);
             mutex.set(false);
-            processActiveExit();
+            processActiveExit();//通知监听器说自己已经释放了,不再是活跃的节点了
             return true;
         }
 

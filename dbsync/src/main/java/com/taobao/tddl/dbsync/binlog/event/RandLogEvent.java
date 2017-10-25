@@ -31,6 +31,7 @@ import com.taobao.tddl.dbsync.binlog.LogEvent;
  * 
  * @author <a href="mailto:changyuan.lh@taobao.com">Changyuan.lh</a>
  * @version 1.0
+ * body内容是存储两个long值的随机数
  */
 public final class RandLogEvent extends LogEvent {
 
@@ -55,8 +56,9 @@ public final class RandLogEvent extends LogEvent {
         super(header);
 
         /* The Post-Header is empty. The Variable Data part begins immediately. */
-        buffer.position(descriptionEvent.commonHeaderLen + descriptionEvent.postHeaderLen[RAND_EVENT - 1]
+        buffer.position(descriptionEvent.commonHeaderLen + descriptionEvent.postHeaderLen[RAND_EVENT - 1]//移动到该事件的位置上
                         + RAND_SEED1_OFFSET);
+        //连续读取两个long值随机数
         seed1 = buffer.getLong64(); // !uint8korr(buf+RAND_SEED1_OFFSET);
         seed2 = buffer.getLong64(); // !uint8korr(buf+RAND_SEED2_OFFSET);
     }

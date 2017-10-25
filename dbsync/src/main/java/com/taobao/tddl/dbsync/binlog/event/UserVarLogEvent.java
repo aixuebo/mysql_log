@@ -11,9 +11,19 @@ import com.taobao.tddl.dbsync.binlog.LogEvent;
  * User_var_log_event. Every time a query uses the value of a user variable, a
  * User_var_log_event is written before the Query_log_event, to set the user
  * variable.
- * 
+ *
+ * 用户自定义变量事件
+ * 查询之前,用户会自定义变量,因此在query事件前,先有UserVarLogEvent事件
  * @author <a href="mailto:changyuan.lh@taobao.com">Changyuan.lh</a>
  * @version 1.0
+ *
+ * 4个字节,表示变量name的长度,然后追加若干个字符,表示name的内容
+ * 1个字节,非0,则表示value是null,0则表示value有值,要接下来继续解析
+ * 1个字节,表示属性值的类型,
+ * 4个字节,表示字符串的时候,.使用什么编码集
+ * 4个字节,表示属性值的占用的大小,比如String类型,因此是记录字节占用内容 + 追加若干个字符串内容字节数组
+ * 如果此时是int 那就直接读取int的值,如果是disimal,就是具体的内容值
+ *
  */
 public final class UserVarLogEvent extends LogEvent {
 
@@ -39,21 +49,21 @@ public final class UserVarLogEvent extends LogEvent {
      * Source : http://forge.mysql.com/wiki/MySQL_Internals_Binary_Log
      */
     private final String       name;
-    private final Serializable value;
-    private final int          type;
-    private final int          charsetNumber;
-    private final boolean      isNull;
+    private final Serializable value;//属性值内容
+    private final int          type;//属性值类型
+    private final int          charsetNumber;//属性值用什么编码
+    private final boolean      isNull;//属性值是否是空
 
     /**
      * The following is for user defined functions
      * 
      * @see mysql-5.1.60//include/mysql_com.h
      */
-    public static final int    STRING_RESULT          = 0;
-    public static final int    REAL_RESULT            = 1;
-    public static final int    INT_RESULT             = 2;
+    public static final int    STRING_RESULT          = 0;//说明数据是字符串形式的
+    public static final int    REAL_RESULT            = 1;//double结果集
+    public static final int    INT_RESULT             = 2;//int结果集
     public static final int    ROW_RESULT             = 3;
-    public static final int    DECIMAL_RESULT         = 4;
+    public static final int    DECIMAL_RESULT         = 4;//小数结果集
 
     /* User_var event data */
     public static final int    UV_VAL_LEN_SIZE        = 4;
@@ -68,20 +78,20 @@ public final class UserVarLogEvent extends LogEvent {
 
         /* The Post-Header is empty. The Variable Data part begins immediately. */
         buffer.position(descriptionEvent.commonHeaderLen + descriptionEvent.postHeaderLen[USER_VAR_EVENT - 1]);
-        final int nameLen = (int) buffer.getUint32();
+        final int nameLen = (int) buffer.getUint32();//4个字节,表示name的长度
         name = buffer.getFixString(nameLen); // UV_NAME_LEN_SIZE
-        isNull = (0 != buffer.getInt8());
+        isNull = (0 != buffer.getInt8());//1个字节,表示该字段是否是null
 
         if (isNull) {
             type = STRING_RESULT;
             charsetNumber = 63; /* binary */
             value = null;
         } else {
-            type = buffer.getInt8(); // UV_VAL_IS_NULL
-            charsetNumber = (int) buffer.getUint32(); // buf + UV_VAL_TYPE_SIZE
+            type = buffer.getInt8(); // UV_VAL_IS_NULL 获取类型
+            charsetNumber = (int) buffer.getUint32(); // buf + UV_VAL_TYPE_SIZE 获取编码
             final int valueLen = (int) buffer.getUint32(); // buf +
-                                                           // UV_CHARSET_NUMBER_SIZE
-            final int limit = buffer.limit(); /* for restore */
+                                                           // UV_CHARSET_NUMBER_SIZE 字符存储的长度
+            final int limit = buffer.limit(); /* for restore *///先找到limit,为了处理完成后,还原limit位置,因此先临时存储一下
             buffer.limit(buffer.position() + valueLen);
 
             /* @see User_var_log_event::print */
@@ -101,7 +111,7 @@ public final class UserVarLogEvent extends LogEvent {
                     break;
                 case STRING_RESULT:
                     String charsetName = CharsetConversion.getJavaCharset(charsetNumber);
-                    value = buffer.getFixString(valueLen, charsetName);
+                    value = buffer.getFixString(valueLen, charsetName);//对数据进行编码后返回
                     break;
                 case ROW_RESULT:
                     // this seems to be banned in MySQL altogether
@@ -117,10 +127,10 @@ public final class UserVarLogEvent extends LogEvent {
     public final String getQuery() {
         if (value == null) {
             return "SET @" + name + " := NULL";
-        } else if (type == STRING_RESULT) {
+        } else if (type == STRING_RESULT) {//说明数据是字符串形式的
             // TODO: do escaping !?
             return "SET @" + name + " := \'" + value + '\'';
-        } else {
+        } else {//说明数据是整数形式的 或者其他形式
             return "SET @" + name + " := " + String.valueOf(value);
         }
     }

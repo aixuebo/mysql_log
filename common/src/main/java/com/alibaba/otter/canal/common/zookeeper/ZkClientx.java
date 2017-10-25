@@ -23,6 +23,7 @@ import com.google.common.collect.MigrateMap;
 public class ZkClientx extends ZkClient {
 
     // 对于zkclient进行一次缓存，避免一个jvm内部使用多个zk connection
+    //key是zookeeper的server服务,value是ZkClientx对象
     private static Map<String, ZkClientx> clients = MigrateMap.makeComputingMap(new Function<String, ZkClientx>() {
 
                                                       public ZkClientx apply(String servers) {

@@ -68,6 +68,7 @@ public class CanalToStringStyle extends ToStringStyle {
             this.pattern = pattern;
         }
 
+        //value如果是时间类型的,则进行转换,转换后的值添加到buffer中
         protected void appendDetail(StringBuffer buffer, String fieldName, Object value) {
             // 增加自定义的date对象处理
             if (value instanceof Date) {

@@ -13,7 +13,7 @@ import org.apache.commons.lang.StringUtils;
  *      cluster  存储有哪些集群节点,即ip:port
  *      destinations
  *        dest1 每一个destination目的地
- *          running (EPHEMERAL) 
+ *          running (EPHEMERAL)  存储ServerRunningData对象
  *          cluster
  *          parse---存储LogPosition信息
  *          client1 每一个客户端--存储客户端ID
@@ -79,7 +79,7 @@ public class ZookeeperPathUtils {
      * 服务端当前正在提供服务的running节点
      */
     public static final String DESTINATION_RUNNING_NODE                     = DESTINATION_NODE + ZOOKEEPER_SEPARATOR
-                                                                              + RUNNING_NODE;//  /otter/canal/destinations/{0}/running
+                                                                              + RUNNING_NODE;//  /otter/canal/destinations/{0}/running   存储ServerRunningData对象
 
     /**
      * 客户端当前正在工作的running节点

@@ -16,9 +16,9 @@ public class ServerRunningData implements Serializable {
 
     private static final long serialVersionUID = 92260481691855281L;
 
-    private Long              cid;
-    private String            address;
-    private boolean           active           = true;
+    private Long              cid;//节点的序号,每一个节点序号唯一
+    private String            address;//节点的ip
+    private boolean           active           = true;//true表示此时该节点是活跃的,集群中只有一个节点是活跃的
 
     public ServerRunningData(){
     }

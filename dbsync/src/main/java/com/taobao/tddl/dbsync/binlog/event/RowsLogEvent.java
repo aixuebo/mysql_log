@@ -8,7 +8,7 @@ import com.taobao.tddl.dbsync.binlog.LogEvent;
 
 /**
  * Common base class for all row-containing log events.
- * 
+ * 事件中包含了哪些行信息
  * @author <a href="mailto:changyuan.lh@taobao.com">Changyuan.lh</a>
  * @version 1.0
  */
@@ -52,7 +52,7 @@ public abstract class RowsLogEvent extends LogEvent {
      * </ul>
      * Source : http://forge.mysql.com/wiki/MySQL_Internals_Binary_Log
      */
-    private final long       tableId;                           /* Table ID */
+    private final long       tableId;                           /* Table ID */ //数据来自于哪个表
     private TableMapLogEvent table;                             /*
                                                                   * The table
                                                                   * the rows
@@ -71,7 +71,7 @@ public abstract class RowsLogEvent extends LogEvent {
      */
     protected final BitSet   changeColumns;
 
-    /** XXX: Don't handle buffer in another thread. */
+    /** XXX: Don't handle buffer in another thread.表示数据信息内容 */
     private final LogBuffer  rowsBuf;                           /*
                                                                   * The rows in
                                                                   * packed

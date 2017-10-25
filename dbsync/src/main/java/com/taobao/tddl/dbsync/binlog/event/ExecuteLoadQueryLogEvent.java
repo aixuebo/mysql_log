@@ -20,6 +20,7 @@ import com.taobao.tddl.dbsync.binlog.LogBuffer;
  * 
  * @author <a href="mailto:changyuan.lh@taobao.com">Changyuan.lh</a>
  * @version 1.0
+ * 如何加载load事件,与load事件不同,该类提示了加载的文件,从哪个位置开始加载，到哪个位置结束的过程.以及出现异常后要如何处理
  */
 public final class ExecuteLoadQueryLogEvent extends QueryLogEvent {
 

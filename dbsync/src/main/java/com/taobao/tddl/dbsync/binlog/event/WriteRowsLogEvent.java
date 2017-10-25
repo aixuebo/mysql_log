@@ -8,6 +8,7 @@ import com.taobao.tddl.dbsync.binlog.LogBuffer;
  * 
  * @author <a href="mailto:changyuan.lh@taobao.com">Changyuan.lh</a>
  * @version 1.0
+ * 属于insert和update事件
  */
 public final class WriteRowsLogEvent extends RowsLogEvent {
 

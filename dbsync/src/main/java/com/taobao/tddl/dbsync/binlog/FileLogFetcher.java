@@ -78,7 +78,7 @@ public final class FileLogFetcher extends LogFetcher {
         fin = new FileInputStream(file);
 
         ensureCapacity(BIN_LOG_HEADER_SIZE);//确保有4个字节头文件
-        //从文件中中读取4个字节,存放到buffer中,长度必须是4个自己诶,否则抛异常
+        //从文件中中读取4个字节,存放到buffer中,长度必须是4个字节,否则抛异常
         if (BIN_LOG_HEADER_SIZE != fin.read(buffer, 0, BIN_LOG_HEADER_SIZE)) throw new IOException("No binlog file header");
 
         //判断四个字节的内容符合标准
@@ -95,14 +95,22 @@ public final class FileLogFetcher extends LogFetcher {
 
         if (filePosition > BIN_LOG_HEADER_SIZE) {//定位到指定文件流位置
         	//读取文件开始部分,关于描述信息的内容
-            final int maxFormatDescriptionEventLen = FormatDescriptionLogEvent.LOG_EVENT_MINIMAL_HEADER_LEN
-                                                     + FormatDescriptionLogEvent.ST_COMMON_HEADER_LEN_OFFSET
-                                                     + LogEvent.ENUM_END_EVENT + LogEvent.BINLOG_CHECKSUM_ALG_DESC_LEN
-                                                     + LogEvent.CHECKSUM_CRC32_SIGNATURE_LEN;
+            /**
+             最多的头文件字节数:
+             公共头 19
+             version(2)+描述(50)+头的字节数(4)
+             事件占用的字节数(164)
+             校验和4 + 校验和算法1
+             */
+            final int maxFormatDescriptionEventLen = FormatDescriptionLogEvent.LOG_EVENT_MINIMAL_HEADER_LEN //公共头
+                                                     + FormatDescriptionLogEvent.ST_COMMON_HEADER_LEN_OFFSET //额外的头,表示binlog的版本,以及服务器的版本描述
+                                                     + LogEvent.ENUM_END_EVENT //事件数量
+                                                     + LogEvent.BINLOG_CHECKSUM_ALG_DESC_LEN //4个字节,表示校验和的长度
+                                                     + LogEvent.CHECKSUM_CRC32_SIGNATURE_LEN;//校验和算法,1个字节
 
             ensureCapacity(maxFormatDescriptionEventLen);//buffer扩容
             limit = fin.read(buffer, 0, maxFormatDescriptionEventLen);//读取数据maxFormatDescriptionEventLen个字节,读取到buffer中,从buffer的0位置开始覆盖
-            limit = (int) getUint32(LogEvent.EVENT_LEN_OFFSET);//表示一共多少个字节是有效的
+            limit = (int) getUint32(LogEvent.EVENT_LEN_OFFSET);//表示一共多少个字节是有效的---即在第9个字节位置上读取四个字节,组成的int
             fin.getChannel().position(filePosition);//定位到文件流的位置
         }
     }

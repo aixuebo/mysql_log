@@ -6,6 +6,21 @@ import com.taobao.tddl.dbsync.binlog.LogBuffer;
 import com.taobao.tddl.dbsync.binlog.LogEvent;
 
 /**
+ *
+ * Post-Header内容:
+ * 6个字节,表示table_id
+ * 2个字节,表示flag,此时都是0,是留给未来用的
+ *
+ * Body内容:
+ 1个字节,表示database_name的长度
+ 1个字节,表示table_name的长度
+ 变长的int值,表示column_count列的数量
+ column_count个字节,每一个字节表示列的类型,按照顺序从左到右展示列的类型
+ 变长的int值,表示metadata_length列的数量
+ metadata_length
+ metadata
+ null_bits
+ *
  * In row-based mode, every row operation event is preceded by a
  * Table_map_log_event which maps a table definition to a number. The table
  * definition consists of database name, table name, and column definitions. The
@@ -319,6 +334,7 @@ public final class TableMapLogEvent extends LogEvent {
 
     /**
      * Holding mysql column information.
+     * 每一个列的类型
      */
     public static final class ColumnInfo {
 
@@ -326,11 +342,11 @@ public final class TableMapLogEvent extends LogEvent {
         public int meta;
     }
 
-    protected final int          columnCnt;
+    protected final int          columnCnt;//列的数量
     protected final ColumnInfo[] columnInfo;         // buffer for field
-                                                      // metadata
+                                                      // metadata 列的信息
 
-    protected final long         tableId;
+    protected final long         tableId;//表对应的ID
     protected BitSet             nullBits;
 
     /** TM = "Table Map" */

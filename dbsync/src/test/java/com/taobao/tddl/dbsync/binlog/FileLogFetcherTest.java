@@ -19,13 +19,13 @@ import com.taobao.tddl.dbsync.binlog.event.mariadb.AnnotateRowsEvent;
 
 public class FileLogFetcherTest extends BaseLogFetcherTest {
 
-    private String directory;
+    private String directory = "e://linux";
 
     @Before
     public void setUp() {
         URL url = Thread.currentThread().getContextClassLoader().getResource("dummy.txt");
         File dummyFile = new File(url.getFile());
-        directory = new File(dummyFile.getParent() + "/binlog").getPath();
+        //directory = new File(dummyFile.getParent() + "/binlog").getPath();
     }
 
     @Test
@@ -35,8 +35,10 @@ public class FileLogFetcherTest extends BaseLogFetcherTest {
             LogDecoder decoder = new LogDecoder(LogEvent.UNKNOWN_EVENT, LogEvent.ENUM_END_EVENT);
             LogContext context = new LogContext();
 
-            File current = new File(directory, "mysql-bin.000001");
-            fetcher.open(current, 2051L);
+            //File current = new File(directory, "mysql-bin.000001");
+            File current = new File(directory, "mysqlbinlog");
+            //fetcher.open(current, 2051L);
+            fetcher.open(current, 0L);
             context.setLogPosition(new LogPosition(current.getName()));
 
             while (fetcher.fetch()) {

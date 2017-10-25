@@ -9,12 +9,12 @@ package com.alibaba.otter.canal.common.zookeeper.running;
 public interface ServerRunningListener {
 
     /**
-     * 启动时回调做点事情
+     * 启动时,即start的时候,当start调用完成后,调用该函数回调做点事情
      */
     public void processStart();
 
     /**
-     * 关闭时回调做点事情
+     * 关闭时,即stop的时候,当stop调用完成后,调用该函数回调做点事情
      */
     public void processStop();
 

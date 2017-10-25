@@ -8,6 +8,7 @@ import com.taobao.tddl.dbsync.binlog.LogEvent;
  * 
  * @author <a href="mailto:changyuan.lh@taobao.com">Changyuan.lh</a>
  * @version 1.0
+ * body内容使用4个字节,表示删除了哪个日志文件
  */
 public final class DeleteFileLogEvent extends LogEvent {
 
@@ -19,8 +20,8 @@ public final class DeleteFileLogEvent extends LogEvent {
     public DeleteFileLogEvent(LogHeader header, LogBuffer buffer, FormatDescriptionLogEvent descriptionEvent){
         super(header);
 
-        final int commonHeaderLen = descriptionEvent.commonHeaderLen;
-        buffer.position(commonHeaderLen + DF_FILE_ID_OFFSET);
+        final int commonHeaderLen = descriptionEvent.commonHeaderLen;//找到头文件的位置
+        buffer.position(commonHeaderLen + DF_FILE_ID_OFFSET);//在头文件的位置后面跟的就是删除的哪个文件
         fileId = buffer.getUint32(); // DF_FILE_ID_OFFSET
     }
 

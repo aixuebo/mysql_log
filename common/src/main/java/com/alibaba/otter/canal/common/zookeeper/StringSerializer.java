@@ -6,7 +6,7 @@ import org.I0Itec.zkclient.exception.ZkMarshallingError;
 import org.I0Itec.zkclient.serialize.ZkSerializer;
 
 /**
- * 基于string的序列化方式
+ * 基于string的序列化与反序列化方式
  * 
  * @author jianghang 2012-7-11 下午02:57:09
  * @version 1.0.0

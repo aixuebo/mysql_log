@@ -37,6 +37,9 @@ import com.taobao.tddl.dbsync.binlog.LogEvent;
  * 
  * @author <a href="mailto:changyuan.lh@taobao.com">Changyuan.lh</a>
  * @version 1.0
+ * 用于切换日志文件
+ * 8个字节,表示在新的log文件中第一个字节的position位置
+ * 可变大小的日志名字
  */
 public final class RotateLogEvent extends LogEvent {
 
@@ -64,7 +67,7 @@ public final class RotateLogEvent extends LogEvent {
     public static final int       R_IDENT_OFFSET = 8;
 
     /* Max length of full path-name */
-    public static final int       FN_REFLEN      = 512;
+    public static final int       FN_REFLEN      = 512;//文件名字的最大值
 
     // Rotate header with all empty fields.
     public static final LogHeader ROTATE_HEADER  = new LogHeader(ROTATE_EVENT);
@@ -82,12 +85,14 @@ public final class RotateLogEvent extends LogEvent {
         final int postHeaderLen = descriptionEvent.postHeaderLen[ROTATE_EVENT - 1];
 
         buffer.position(headerSize + R_POS_OFFSET);
+        //先读取8个字节表示long,如果没有传入这8个字节,则设置默认值为4
         position = (postHeaderLen != 0) ? buffer.getLong64() : 4; // !uint8korr(buf
                                                                   // +
                                                                   // R_POS_OFFSET)
 
-        final int filenameOffset = headerSize + postHeaderLen;
-        int filenameLen = buffer.limit() - filenameOffset;
+        //获取文件名
+        final int filenameOffset = headerSize + postHeaderLen;//文件名字的开始位置
+        int filenameLen = buffer.limit() - filenameOffset;//文件名字的结束位置
         if (filenameLen > FN_REFLEN - 1) filenameLen = FN_REFLEN - 1;
         buffer.position(filenameOffset);
         filename = buffer.getFixString(filenameLen);
@@ -96,6 +101,7 @@ public final class RotateLogEvent extends LogEvent {
     /**
      * Creates a new <code>Rotate_log_event</code> without log information. This
      * is used to generate missing log rotation events.
+     * 因为先产生一个日志,因此position事件的位置就是从4开始
      */
     public RotateLogEvent(String filename){
         super(ROTATE_HEADER);
@@ -106,6 +112,7 @@ public final class RotateLogEvent extends LogEvent {
 
     /**
      * Creates a new <code>Rotate_log_event</code> without log information.
+     * 产生一个新的文件,从新的位置开始抓去
      */
     public RotateLogEvent(String filename, final long position){
         super(ROTATE_HEADER);

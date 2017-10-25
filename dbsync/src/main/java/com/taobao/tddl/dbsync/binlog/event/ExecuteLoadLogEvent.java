@@ -8,10 +8,11 @@ import com.taobao.tddl.dbsync.binlog.LogEvent;
  * 
  * @author <a href="mailto:changyuan.lh@taobao.com">Changyuan.lh</a>
  * @version 1.0
+ * 加载整个load文件
  */
 public final class ExecuteLoadLogEvent extends LogEvent {
 
-    private final long      fileId;
+    private final long      fileId;//要load的文件ID
 
     /* EL = "Execute Load" */
     public static final int EL_FILE_ID_OFFSET = 0;

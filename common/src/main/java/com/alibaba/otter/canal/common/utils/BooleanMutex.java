@@ -29,12 +29,13 @@ import java.util.concurrent.locks.AbstractQueuedSynchronizer;
  * 
  * @author jianghang 2011-9-23 上午09:58:03
  * @version 1.0.0
+ * boolean实现的互斥锁
  */
 public class BooleanMutex {
 
-    private Sync sync;
+    private Sync sync;//false表示要被阻塞
 
-    public BooleanMutex(){
+    public BooleanMutex(){//默认false
         sync = new Sync();
         set(false);
     }

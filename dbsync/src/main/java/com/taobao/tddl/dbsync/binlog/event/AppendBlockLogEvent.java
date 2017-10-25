@@ -8,13 +8,14 @@ import com.taobao.tddl.dbsync.binlog.LogEvent;
  * 
  * @author <a href="mailto:changyuan.lh@taobao.com">Changyuan.lh</a>
  * @version 1.0
+ * 追加文件内容到文件中的事件
  */
 public class AppendBlockLogEvent extends LogEvent {
 
-    private final LogBuffer blockBuf;
-    private final int       blockLen;
+    private final LogBuffer blockBuf;//追加的文件内容
+    private final int       blockLen;//追加的文件大小
 
-    private final long      fileId;
+    private final long      fileId;//追加到哪个文件中
 
     /* AB = "Append Block" */
     public static final int AB_FILE_ID_OFFSET = 0;

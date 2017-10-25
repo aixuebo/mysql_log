@@ -18,12 +18,13 @@ public final class FormatDescriptionLogEvent extends StartLogEventV3 {
      * The number of types we handle in Format_description_log_event
      * (UNKNOWN_EVENT is not to be handled, it does not exist in binlogs, it
      * does not have a format).
+     * 一共多少个事件类型,UNKNOWN_EVENT不是binlog真实的事件类型,因此没有这个
      */
     public static final int   LOG_EVENT_TYPES                     = (ENUM_END_EVENT - 1);
 
-    public static final int   ST_COMMON_HEADER_LEN_OFFSET         = (ST_SERVER_VER_OFFSET + ST_SERVER_VER_LEN + 4);
+    public static final int   ST_COMMON_HEADER_LEN_OFFSET         = (ST_SERVER_VER_OFFSET + ST_SERVER_VER_LEN + 4);//2个字节表示的binlog的日志版本号.比如4,以及server服务描述用50个字节表示,4表示binlog日志记录的时间戳,单位是秒
 
-    public static final int   OLD_HEADER_LEN                      = 13;
+    public static final int   OLD_HEADER_LEN                      = 13;//最小的头文件
     public static final int   LOG_EVENT_HEADER_LEN                = 19;//事件头文件所占用字节长度
     public static final int   LOG_EVENT_MINIMAL_HEADER_LEN        = 19;
 
@@ -67,9 +68,9 @@ public final class FormatDescriptionLogEvent extends StartLogEventV3 {
     public static final int   POST_HEADER_LENGTH                  = 11;
 
     public static final int   BINLOG_CHECKSUM_ALG_DESC_LEN        = 1;
-    public static final int[] checksumVersionSplit                = { 5, 6, 1 };
+    public static final int[] checksumVersionSplit                = { 5, 6, 1 };//即该版本后事件都有校验和
     public static final long  checksumVersionProduct              = (checksumVersionSplit[0] * 256 + checksumVersionSplit[1])
-                                                                    * 256 + checksumVersionSplit[2];
+                                                                    * 256 + checksumVersionSplit[2];//校验和的日志版本号,比这个版本号大的都有校验和
     /**
      * The size of the fixed header which _all_ events have (for binlogs written
      * by this version, this is equal to LOG_EVENT_HEADER_LEN), except
@@ -77,10 +78,10 @@ public final class FormatDescriptionLogEvent extends StartLogEventV3 {
      * LOG_EVENT_MINIMAL_HEADER_LEN).
      */
     protected final int       commonHeaderLen;
-    protected int             numberOfEventTypes;
+    protected int             numberOfEventTypes;//一共多少个事件类型
 
     /** The list of post-headers' lengthes */
-    protected final short[]   postHeaderLen;
+    protected final short[]   postHeaderLen;//有多少个事件,就有多少个数组的length,而每一个元素的值是一个short,表示该事件需要多少个额外的字节头信息
     protected int[]           serverVersionSplit                  = new int[3];
 
     public FormatDescriptionLogEvent(LogHeader header, LogBuffer buffer, FormatDescriptionLogEvent descriptionEvent)
@@ -89,7 +90,7 @@ public final class FormatDescriptionLogEvent extends StartLogEventV3 {
         super(header, buffer, descriptionEvent);
 
         buffer.position(LOG_EVENT_MINIMAL_HEADER_LEN + ST_COMMON_HEADER_LEN_OFFSET);
-        commonHeaderLen = buffer.getUint8();
+        commonHeaderLen = buffer.getUint8();//1个字节表示公共头长度
         if (commonHeaderLen < OLD_HEADER_LEN) /* sanity check */
         {
             throw new IOException("Format Description event header length is too short");
@@ -101,11 +102,11 @@ public final class FormatDescriptionLogEvent extends StartLogEventV3 {
         // + ST_COMMON_HEADER_LEN_OFFSET + 1);
         postHeaderLen = new short[numberOfEventTypes];
         for (int i = 0; i < numberOfEventTypes; i++) {
-            postHeaderLen[i] = (short) buffer.getUint8();
+            postHeaderLen[i] = (short) buffer.getUint8();//1个字节表示该事件对应的头长度
         }
 
         calcServerVersionSplit();
-        long calc = getVersionProduct();
+        long calc = getVersionProduct();//计算版本,查看是否支持校验和
         if (calc >= checksumVersionProduct) {
             /*
              * the last bytes are the checksum alg desc and value (or value's
@@ -118,6 +119,7 @@ public final class FormatDescriptionLogEvent extends StartLogEventV3 {
                                                 + numberOfEventTypes);
     }
 
+    //mysql的版本支持的binlog版本
     /** MySQL 5.0 format descriptions. */
     public static final FormatDescriptionLogEvent FORMAT_DESCRIPTION_EVENT_5_x   = new FormatDescriptionLogEvent(4);
 
@@ -279,6 +281,7 @@ public final class FormatDescriptionLogEvent extends StartLogEventV3 {
         return getVersionProduct() < checksumVersionProduct;
     }
 
+    //计算版本号
     public static void doServerVersionSplit(String serverVersion, int[] versionSplit) {
         String[] split = serverVersion.split("\\.");
         if (split.length < 3) {
@@ -305,6 +308,7 @@ public final class FormatDescriptionLogEvent extends StartLogEventV3 {
         }
     }
 
+    //将版本号计算成整数
     public static long versionProduct(int[] versionSplit) {
         return ((versionSplit[0] * 256 + versionSplit[1]) * 256 + versionSplit[2]);
     }

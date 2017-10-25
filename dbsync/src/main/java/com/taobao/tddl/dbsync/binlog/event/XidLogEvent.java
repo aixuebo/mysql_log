@@ -9,6 +9,10 @@ import com.taobao.tddl.dbsync.binlog.LogEvent;
  * 
  * @author <a href="mailto:changyuan.lh@taobao.com">Changyuan.lh</a>
  * @version 1.0
+ * 该事件没有任何意义,因此可以忽略他.主要表示二阶段协议日志提交了
+ *
+ * 一个8个字节的xid信息
+ * 表示COMMIT 事件
  */
 public final class XidLogEvent extends LogEvent {
 

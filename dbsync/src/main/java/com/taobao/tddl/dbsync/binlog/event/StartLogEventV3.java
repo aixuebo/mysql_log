@@ -14,6 +14,9 @@ import com.taobao.tddl.dbsync.binlog.LogEvent;
  * @see mysql-5.1.60/sql/log_event.cc - Start_log_event_v3
  * @author <a href="mailto:changyuan.lh@taobao.com">Changyuan.lh</a>
  * @version 1.0
+ * 表示开启log日志的事件,即日志记录的第一个事件,用于描述信息
+ * 2个字节表示的binlog的日志版本号.比如4,
+ * 50个字节表示server服务描述
  */
 public class StartLogEventV3 extends LogEvent {
 
@@ -22,14 +25,14 @@ public class StartLogEventV3 extends LogEvent {
      * dependency - if somebody decided to change SERVER_VERSION_LENGTH this
      * would break the replication protocol
      */
-    public static final int ST_SERVER_VER_LEN    = 50;
+    public static final int ST_SERVER_VER_LEN    = 50;//server服务的名字,用50个字节表示
 
     /* start event post-header (for v3 and v4) */
     public static final int ST_BINLOG_VER_OFFSET = 0;
-    public static final int ST_SERVER_VER_OFFSET = 2;
+    public static final int ST_SERVER_VER_OFFSET = 2;//使用2个字节表示版本号
 
-    protected int           binlogVersion;
-    protected String        serverVersion;
+    protected int           binlogVersion;//binlog日志的版本,最高版本为4
+    protected String        serverVersion;//服务器内容
 
     public StartLogEventV3(LogHeader header, LogBuffer buffer, FormatDescriptionLogEvent descriptionEvent){
         super(header);

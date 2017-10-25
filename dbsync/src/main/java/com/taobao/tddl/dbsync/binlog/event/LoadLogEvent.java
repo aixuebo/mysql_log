@@ -6,7 +6,19 @@ import com.taobao.tddl.dbsync.binlog.LogEvent;
 /**
  * This log event corresponds to a "LOAD DATA INFILE" SQL query on the following
  * form:
- * 
+ * 加载数据到数据库
+ Post-Header for Load_log_event内容:
+4个字节,表示slave_proxy_id,表示产生该请求的客户端ID
+4个字节,表示执行时间
+4个字节,表示skip_lines,多少条数据导入失败
+1个字节,table name的字节长度
+1个字节,db的字节长度
+4个字节,字段的数量
+
+ Body of Load_log_event,body的内容:
+
+ *
+ *
  * <pre>
  *    (1)    USE db;
  *    (2)    LOAD DATA [CONCURRENT] [LOCAL] INFILE 'file_name'
@@ -157,12 +169,14 @@ public class LoadLogEvent extends LogEvent {
 
     private String          table;
     private String          db;
-    private String          fname;
-    private int             skipLines;
-    private int             numFields;
-    private String[]        fields;
+    private String          fname;//文件名字
+    private int             skipLines;//跳过的行数,即失败的记录数
+    private int             numFields;//多少个字段
+    private String[]        fields;//设置每一个字段的name组成的集合
 
-    /* sql_ex_info */
+    /* sql_ex_info
+    * 设置分隔符等信息
+    **/
     private String          fieldTerm;
     private String          lineTerm;
     private String          lineStart;
@@ -171,9 +185,17 @@ public class LoadLogEvent extends LogEvent {
     private int             optFlags;
     private int             emptyFlags;
 
-    private long            execTime;
+    private long            execTime;//执行时间
 
-    /* Load event post-header */
+    /* Load event post-header
+    * 解析:
+    4个字节,表示slave_proxy_id,表示产生该请求的客户端ID
+4个字节,表示执行时间
+4个字节,表示skip_lines,多少条数据导入失败
+1个字节,table name的字节长度
+1个字节,db的字节长度
+4个字节,字段的数量
+    **/
     public static final int L_THREAD_ID_OFFSET  = 0;
     public static final int L_EXEC_TIME_OFFSET  = 4;
     public static final int L_SKIP_LINES_OFFSET = 8;
@@ -202,7 +224,7 @@ public class LoadLogEvent extends LogEvent {
     public LoadLogEvent(LogHeader header, LogBuffer buffer, FormatDescriptionLogEvent descriptionEvent){
         super(header);
 
-        final int loadHeaderLen = FormatDescriptionLogEvent.LOAD_HEADER_LEN;
+        final int loadHeaderLen = FormatDescriptionLogEvent.LOAD_HEADER_LEN;//需要额外的header字节数
         /*
          * I (Guilhem) manually tested replication of LOAD DATA INFILE for
          * 3.23->5.0, 4.0->5.0 and 5.0->5.0 and it works.
@@ -226,7 +248,7 @@ public class LoadLogEvent extends LogEvent {
         final int dbLen = buffer.getUint8(); // L_DB_LEN_OFFSET
         numFields = (int) buffer.getUint32(); // L_NUM_FIELDS_OFFSET
 
-        buffer.position(bodyOffset);
+        buffer.position(bodyOffset);//开始解析body
         /*
          * Sql_ex.init() on success returns the pointer to the first byte after
          * the sql_ex structure, which is the start of field lengths array.
@@ -248,6 +270,7 @@ public class LoadLogEvent extends LogEvent {
             optFlags = buffer.getInt8();
             emptyFlags = 0;
         } else {
+            //设置分隔符等信息
             fieldTerm = buffer.getFixString(1);
             enclosed = buffer.getFixString(1);
             lineTerm = buffer.getFixString(1);
@@ -264,9 +287,9 @@ public class LoadLogEvent extends LogEvent {
         }
 
         final int fieldLenPos = buffer.position();
-        buffer.forward(numFields);
+        buffer.forward(numFields);//将position移动len个位置
         fields = new String[numFields];
-        for (int i = 0; i < numFields; i++) {
+        for (int i = 0; i < numFields; i++) {//每一个字段的name由长度+内容组成
             final int fieldLen = buffer.getUint8(fieldLenPos + i);
             fields[i] = buffer.getFixString(fieldLen + 1);
         }

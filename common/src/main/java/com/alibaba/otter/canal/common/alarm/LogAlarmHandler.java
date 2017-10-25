@@ -16,6 +16,7 @@ public class LogAlarmHandler extends AbstractCanalLifeCycle implements CanalAlar
 
     private static final Logger logger = LoggerFactory.getLogger(LogAlarmHandler.class);
 
+    //当产生报警的时候记录日志即可
     public void sendAlarm(String destination, String msg) {
         logger.error("destination:{}[{}]", new Object[] { destination, msg });
     }

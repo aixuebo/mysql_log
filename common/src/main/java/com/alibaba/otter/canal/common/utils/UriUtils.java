@@ -50,6 +50,7 @@ public final class UriUtils {
     }
 
     public static Map<String, String> parseQuery(final URI uri, final String encoding) {
+        //接续query,即url中xx=xx&yy=yy部分
         if (uri == null || StringUtils.isBlank(uri.getQuery())) {//没有query,则返回空的集合
             return Collections.EMPTY_MAP;
         }

@@ -19,7 +19,8 @@ import com.taobao.tddl.dbsync.binlog.LogEvent;
  *   just as well derive from Log_event and pass LOG_EVENT_IGNORABLE_F as
  *   argument to the Log_event constructor.
  * </pre>
- * 
+ *
+ * 被忽略的事件
  * @author jianghang 2013-4-8 上午12:36:29
  * @version 1.0.3
  * @since mysql 5.6

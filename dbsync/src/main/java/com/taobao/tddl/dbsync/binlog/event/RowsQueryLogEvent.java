@@ -6,10 +6,12 @@ import com.taobao.tddl.dbsync.binlog.LogBuffer;
  * @author jianghang 2013-4-8 上午12:36:29
  * @version 1.0.3
  * @since mysql 5.6
+ * query的查询sql
+ * MySQL新增了一个事务类型来输出ROW格式中原生的DML语句，即ROWS_QUERY_EVENT。
  */
 public class RowsQueryLogEvent extends IgnorableLogEvent {
 
-    private String rowsQuery;
+    private String rowsQuery;//记录查询sql
 
     public RowsQueryLogEvent(LogHeader header, LogBuffer buffer, FormatDescriptionLogEvent descriptionEvent){
         super(header, buffer, descriptionEvent);

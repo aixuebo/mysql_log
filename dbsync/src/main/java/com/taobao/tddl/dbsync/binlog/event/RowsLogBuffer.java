@@ -17,6 +17,7 @@ import com.taobao.tddl.dbsync.binlog.LogEvent;
  * @see mysql-5.1.60/sql/log_event.cc - Rows_log_event::print_verbose_one_row
  * @author <a href="mailto:changyuan.lh@taobao.com">Changyuan.lh</a>
  * @version 1.0
+ * 抽取一行数据的值
  */
 public final class RowsLogBuffer {
 

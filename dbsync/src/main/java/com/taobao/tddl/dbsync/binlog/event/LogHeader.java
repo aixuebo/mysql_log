@@ -4,6 +4,12 @@ import com.taobao.tddl.dbsync.binlog.LogBuffer;
 import com.taobao.tddl.dbsync.binlog.LogEvent;
 
 /**
+ * Common-Header字段表示所有的事件都公用的头部信息,一共19个字节
+ * Post-Header表示每一个事件类型有特殊的头部信息
+ * body表示事件具体内容
+ *
+ * Post-Header和body在子类中讲解,该类只是讲解公共头文件
+ *
  * The Common-Header, documented in the table @ref Table_common_header "below",
  * always has the same form and length within one version of MySQL. Each event
  * type specifies a format and length of the Post-Header. The length of the
@@ -11,6 +17,27 @@ import com.taobao.tddl.dbsync.binlog.LogEvent;
  * different format and length even for different events of the same type. The
  * binary formats of Post-Header and Body are documented separately in each
  * subclass. The binary format of Common-Header is as follows.
+ *
+ * 格式:一共占用19个byte表示的头文件说明:
+ * 4个字节,timestamp时间戳,单位是秒----当查询开始时候的时间
+ * 1个字节,type事件类型,
+ * 4个字节,server_id,即创建该事件的server是哪个server
+ * 4个字节,total_size 事件的总字节大小,即(Common-Header+Post-Header+Body)
+ * 4个字节,master_position,表示master上,下一个事件在binlog日志中要写入的位置
+ relay-log日志记录的是从服务器I/O线程将主服务器的二进制日志读取过来记录到从服务器本地文件，然后SQL线程会读取relay-log日志的内容并应用到从服务器
+ binlog不是relay-log日志,因此该位置就是下一个事件在master上要写入到binlog日志的位置偏移量
+ 而在relay-log日志中.该位置是下一个事件在master的binlog上的偏移量,不是relay-log的偏移量
+ 有些绕,详细参见视频
+  2个字节,flags,参见 Log_event::flags,表示事件的特殊用法
+
+ * </tr>
+ * <tr>
+ * <td>flags</td>
+ * <td>2 byte bitfield</td>
+ * <td>See Log_event::flags.</td>
+ * </tr>
+ * </table>
+ *
  * <table>
  * <caption>Common-Header</caption>
  * <tr>
@@ -62,7 +89,7 @@ import com.taobao.tddl.dbsync.binlog.LogEvent;
  */
 public final class LogHeader {
 
-    protected final int type;
+    protected final int type;//事件类型
 
     /**
      * The offset in the log where this event originally appeared (it is
@@ -73,6 +100,7 @@ public final class LogHeader {
      * the BEGIN (this way, when one does SHOW SLAVE STATUS it sees the offset
      * of the BEGIN, which is logical as rollback may occur), except the COMMIT
      * query which has its real offset.
+     * 下一个事件在master的binlog的开始偏移量,方便下一次获取
      */
     protected long      logPos;
 
@@ -83,15 +111,19 @@ public final class LogHeader {
      * events where this is set at the query's execution time, which guarantees
      * good replication (otherwise, we could have a query and its event with
      * different timestamps).
+     * 4个字节的时间戳---事件在master上产生的时间戳
      */
     protected long      when;
 
-    /** Number of bytes written by write() function */
+    /** Number of bytes written by write() function
+     * 事件的总长度,包含头+特殊头+body
+     **/
     protected int       eventLen;
 
     /**
      * The master's server id (is preserved in the relay log; used to prevent
      * from infinite loops in circular replication).
+     * master产生该事件的服务器ID
      */
     protected long      serverId;
 
@@ -99,6 +131,7 @@ public final class LogHeader {
      * Some 16 flags. See the definitions above for LOG_EVENT_TIME_F,
      * LOG_EVENT_FORCED_ROTATE_F, LOG_EVENT_THREAD_SPECIFIC_F, and
      * LOG_EVENT_SUPPRESS_USE_F for notes.
+     * 事件的特殊表示
      */
     protected int       flags;
 
@@ -108,10 +141,12 @@ public final class LogHeader {
      * into the last byte of post_header_len[] at FD::write(). On the slave side
      * the value is assigned from post_header_len[last] of the last seen FD
      * event.
+     * 该值表示校验和算法
      */
     protected int       checksumAlg;
     /**
      * Placeholder for event checksum while writing to binlog.
+     * binlog解析的事件中校验和的内容,该内容是binlog的master传递过来的
      */
     protected long      crc;        // ha_checksum
 
@@ -120,20 +155,21 @@ public final class LogHeader {
         this.type = type;
     }
 
+    //此时的buffer就是从事件的头开始计算的,已经没有了魔
     public LogHeader(LogBuffer buffer, FormatDescriptionLogEvent descriptionEvent){
-        when = buffer.getUint32();
-        type = buffer.getUint8(); // LogEvent.EVENT_TYPE_OFFSET;
-        serverId = buffer.getUint32(); // LogEvent.SERVER_ID_OFFSET;
-        eventLen = (int) buffer.getUint32(); // LogEvent.EVENT_LEN_OFFSET;
+        when = buffer.getUint32();//4个字节的时间戳
+        type = buffer.getUint8(); // LogEvent.EVENT_TYPE_OFFSET; 1个字节的事件类型
+        serverId = buffer.getUint32(); // LogEvent.SERVER_ID_OFFSET;4个字节的事件产生的服务器ID
+        eventLen = (int) buffer.getUint32(); // LogEvent.EVENT_LEN_OFFSET;事件的总长度
 
-        if (descriptionEvent.binlogVersion == 1) {
+        if (descriptionEvent.binlogVersion == 1) {//说明版本是1,日志版本是1我们先不考虑,因为我们仅仅考虑版本是4的日志
             logPos = 0;
             flags = 0;
             return;
         }
 
-        /* 4.0 or newer */
-        logPos = buffer.getUint32(); // LogEvent.LOG_POS_OFFSET
+        /* 4.0 or newer 日志格式是4.0以后的版本 */
+        logPos = buffer.getUint32(); // LogEvent.LOG_POS_OFFSET 获取下一个事件在master的binlog中的起始位置
         /*
          * If the log is 4.0 (so here it can only be a 4.0 relay log read by the
          * SQL thread or a 4.0 master binlog read by the I/O thread), log_pos is
@@ -142,6 +178,7 @@ public final class LogHeader {
          * you know it if description_event is version 3 *and* you are not
          * reading a Format_desc (remember that mysqlbinlog starts by assuming
          * that 5.0 logs are in 4.0 format, until it finds a Format_desc).
+         * 针对版本是3的时候进行处理,基本上新版本都是4,因此这部分代码可以忽略
          */
         if (descriptionEvent.binlogVersion == 3 && type < LogEvent.FORMAT_DESCRIPTION_EVENT && logPos != 0) {
             /*
@@ -158,7 +195,7 @@ public final class LogHeader {
             logPos += eventLen; /* purecov: inspected */
         }
 
-        flags = buffer.getUint16(); // LogEvent.FLAGS_OFFSET
+        flags = buffer.getUint16(); // LogEvent.FLAGS_OFFSET  2个字节,获取附加的flag信息
         if ((type == LogEvent.FORMAT_DESCRIPTION_EVENT) || (type == LogEvent.ROTATE_EVENT)) {
             /*
              * These events always have a header which stops here (i.e. their
@@ -173,18 +210,17 @@ public final class LogHeader {
              * twice when you have two masters which are slaves of a 3rd
              * master). Then we are done.
              */
-
-            if (type == LogEvent.FORMAT_DESCRIPTION_EVENT) {
-                int commonHeaderLen = buffer.getUint8(FormatDescriptionLogEvent.LOG_EVENT_MINIMAL_HEADER_LEN
-                                                      + FormatDescriptionLogEvent.ST_COMMON_HEADER_LEN_OFFSET);
-                buffer.position(commonHeaderLen + FormatDescriptionLogEvent.ST_SERVER_VER_OFFSET);
+            if (type == LogEvent.FORMAT_DESCRIPTION_EVENT) {//说明是格式描述事件
+                int commonHeaderLen = buffer.getUint8(FormatDescriptionLogEvent.LOG_EVENT_MINIMAL_HEADER_LEN //头的最小长度
+                                                      + FormatDescriptionLogEvent.ST_COMMON_HEADER_LEN_OFFSET);//定位到19+2+50+4位置,读取一个字节的头的长度
+                buffer.position(commonHeaderLen + FormatDescriptionLogEvent.ST_SERVER_VER_OFFSET);//读取2个byte
                 String serverVersion = buffer.getFixString(FormatDescriptionLogEvent.ST_SERVER_VER_LEN); // ST_SERVER_VER_OFFSET
                 int versionSplit[] = new int[] { 0, 0, 0 };
-                FormatDescriptionLogEvent.doServerVersionSplit(serverVersion, versionSplit);
-                checksumAlg = LogEvent.BINLOG_CHECKSUM_ALG_UNDEF;
+                FormatDescriptionLogEvent.doServerVersionSplit(serverVersion, versionSplit);//计算版本号
+                checksumAlg = LogEvent.BINLOG_CHECKSUM_ALG_UNDEF;//默认校验和算法
                 if (FormatDescriptionLogEvent.versionProduct(versionSplit) >= FormatDescriptionLogEvent.checksumVersionProduct) {
                     buffer.position(eventLen - LogEvent.BINLOG_CHECKSUM_LEN - LogEvent.BINLOG_CHECKSUM_ALG_DESC_LEN);
-                    checksumAlg = buffer.getUint8();
+                    checksumAlg = buffer.getUint8();//获取一个byte的字节的校验和算法
                 }
 
                 processCheckSum(buffer);
@@ -271,8 +307,8 @@ public final class LogHeader {
     }
 
     private void processCheckSum(LogBuffer buffer) {
-        if (checksumAlg != LogEvent.BINLOG_CHECKSUM_ALG_OFF && checksumAlg != LogEvent.BINLOG_CHECKSUM_ALG_UNDEF) {
-            crc = buffer.getUint32(eventLen - LogEvent.BINLOG_CHECKSUM_LEN);
+        if (checksumAlg != LogEvent.BINLOG_CHECKSUM_ALG_OFF && checksumAlg != LogEvent.BINLOG_CHECKSUM_ALG_UNDEF) {//说明要解析校验和
+            crc = buffer.getUint32(eventLen - LogEvent.BINLOG_CHECKSUM_LEN);//事件总字节数-校验和内容所占用的字节数,即校验和内容的字节位置,读取一个int表示校验和的值
         }
     }
 }

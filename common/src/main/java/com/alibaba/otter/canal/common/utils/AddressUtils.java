@@ -10,6 +10,7 @@ import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+//对IP地址的工具类
 public class AddressUtils {
 
     private static final Logger  logger       = LoggerFactory.getLogger(AddressUtils.class);
@@ -17,7 +18,7 @@ public class AddressUtils {
     private static final String  EMPTY_IP     = "0.0.0.0";
     private static final Pattern IP_PATTERN   = Pattern.compile("[0-9]{1,3}(\\.[0-9]{1,3}){3,}");//ip的正则表达式
 
-    //true表示该端口可用
+    //true表示该端口可用---即使用该端口是否抛异常
     public static boolean isAvailablePort(int port) {
         ServerSocket ss = null;
         try {
@@ -29,17 +30,17 @@ public class AddressUtils {
         } finally {
             if (ss != null) {
                 try {
-                    ss.close();
+                    ss.close();//测试完要关闭该端口
                 } catch (IOException e) {
                 }
             }
         }
     }
 
-    //true表示提供的ip或者host是有效可用的
+    //true表示提供的ip或者host是有效可用的--即语法规则以及ip地址的约束
     private static boolean isValidHostAddress(InetAddress address) {
         if (address == null || address.isLoopbackAddress()) return false;
-        String name = address.getHostAddress();
+        String name = address.getHostAddress();//获取ip地址
         return (name != null && !EMPTY_IP.equals(name) && !LOCALHOST_IP.equals(name) && IP_PATTERN.matcher(name).matches());
     }
 
@@ -55,6 +56,7 @@ public class AddressUtils {
         return address == null ? null : address.getHostName();
     }
 
+    //获取本地的地址对象
     public static InetAddress getHostAddress() {
         InetAddress localAddress = null;
         try {
