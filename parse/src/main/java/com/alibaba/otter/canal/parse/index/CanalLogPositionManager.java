@@ -9,6 +9,7 @@ import com.alibaba.otter.canal.protocol.position.LogPosition;
  * 
  * @author jianghang 2012-7-7 上午10:02:02
  * @version 1.0.0
+ * 用于服务器上存储每一个destination已经抓去到哪个位置了,当服务器挂了重启后,需要该信息
  */
 public interface CanalLogPositionManager extends CanalLifeCycle {
 

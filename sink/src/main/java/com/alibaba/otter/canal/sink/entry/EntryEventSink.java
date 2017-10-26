@@ -32,11 +32,13 @@ public class EntryEventSink extends AbstractCanalEventSink<List<CanalEntry.Entry
 
     private static final Logger    logger                        = LoggerFactory.getLogger(EntryEventSink.class);
     private static final int       maxFullTimes                  = 10;
-    private CanalEventStore<Event> eventStore;
+    private CanalEventStore<Event> eventStore;//事件存储容器
     protected boolean              filterTransactionEntry        = false;                                        // 是否需要过滤事务头/尾
     protected boolean              filterEmtryTransactionEntry   = true;                                         // 是否需要过滤空的事务头/尾
+    //两种阀值去控制空的事件去sink处理
     protected long                 emptyTransactionInterval      = 5 * 1000;                                     // 空的事务输出的频率
     protected long                 emptyTransctionThresold       = 8192;                                         // 超过1024个事务头，输出一个
+    //针对emptyTransactionInterval和emptyTransctionThresold的计数器
     protected volatile long        lastEmptyTransactionTimestamp = 0L;
     protected AtomicLong           lastEmptyTransactionCount     = new AtomicLong(0L);
 
@@ -113,7 +115,7 @@ public class EntryEventSink extends AbstractCanalEventSink<List<CanalEntry.Entry
         } else {
             // 需要过滤的数据
             if (filterEmtryTransactionEntry && !CollectionUtils.isEmpty(events)) {
-                long currentTimestamp = events.get(0).getEntry().getHeader().getExecuteTime();
+                long currentTimestamp = events.get(0).getEntry().getHeader().getExecuteTime();//第一个事件的执行时间
                 // 基于一定的策略控制，放过空的事务头和尾，便于及时更新数据库位点，表明工作正常
                 if (Math.abs(currentTimestamp - lastEmptyTransactionTimestamp) > emptyTransactionInterval
                     || lastEmptyTransactionCount.incrementAndGet() > emptyTransctionThresold) {

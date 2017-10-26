@@ -61,8 +61,8 @@ public class CanalServerWithNetty extends AbstractCanalLifeCycle implements Cana
 
             public ChannelPipeline getPipeline() throws Exception {
                 ChannelPipeline pipelines = Channels.pipeline();
-                pipelines.addLast(FixedHeaderFrameDecoder.class.getName(), new FixedHeaderFrameDecoder());
-                pipelines.addLast(HandshakeInitializationHandler.class.getName(), new HandshakeInitializationHandler());
+                pipelines.addLast(FixedHeaderFrameDecoder.class.getName(), new FixedHeaderFrameDecoder());//读取header头内容,通过头内容,获取整个包内容
+                pipelines.addLast(HandshakeInitializationHandler.class.getName(), new HandshakeInitializationHandler());//握手协议
                 pipelines.addLast(ClientAuthenticationHandler.class.getName(),
                     new ClientAuthenticationHandler(embeddedServer));
 

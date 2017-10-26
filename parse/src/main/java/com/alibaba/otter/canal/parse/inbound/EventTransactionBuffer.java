@@ -22,12 +22,12 @@ public class EventTransactionBuffer extends AbstractCanalLifeCycle {
     private static final long        INIT_SQEUENCE = -1;
     private int                      bufferSize    = 1024;
     private int                      indexMask;
-    private CanalEntry.Entry[]       entries;
+    private CanalEntry.Entry[]       entries;//存放事件对象的队列
 
     private AtomicLong               putSequence   = new AtomicLong(INIT_SQEUENCE); // 代表当前put操作最后一次写操作发生的位置
     private AtomicLong               flushSequence = new AtomicLong(INIT_SQEUENCE); // 代表满足flush条件后最后一次数据flush的时间
 
-    private TransactionFlushCallback flushCallback;
+    private TransactionFlushCallback flushCallback;//数据事务提交的函数---确保事务可以同时提交和回滚
 
     public EventTransactionBuffer(){
 
@@ -76,7 +76,7 @@ public class EventTransactionBuffer extends AbstractCanalLifeCycle {
                 put(entry);
                 // 针对非DML的数据，直接输出，不进行buffer控制
                 EventType eventType = entry.getHeader().getEventType();
-                if (eventType != null && !isDml(eventType)) {
+                if (eventType != null && !isDml(eventType)) {//说明不是DML操作,则要刷新,因为DML不可能在一个事务内与创建表sql的DDL公用一个事务
                     flush();
                 }
                 break;
@@ -92,21 +92,21 @@ public class EventTransactionBuffer extends AbstractCanalLifeCycle {
 
     private void put(CanalEntry.Entry data) throws InterruptedException {
         // 首先检查是否有空位
-        if (checkFreeSlotAt(putSequence.get() + 1)) {
+        if (checkFreeSlotAt(putSequence.get() + 1)) {//说明有空位置
             long current = putSequence.get();
             long next = current + 1;
 
             // 先写数据，再更新对应的cursor,并发度高的情况，putSequence会被get请求可见，拿出了ringbuffer中的老的Entry值
             entries[getIndex(next)] = data;
             putSequence.set(next);
-        } else {
+        } else {//说明没有空间了,则执行刷新操作,腾出空间
             flush();// buffer区满了，刷新一下
             put(data);// 继续加一下新数据
         }
     }
 
     private void flush() throws InterruptedException {
-        long start = this.flushSequence.get() + 1;
+        long start = this.flushSequence.get() + 1;//从哪里开始flush
         long end = this.putSequence.get();
 
         if (start <= end) {
@@ -121,7 +121,7 @@ public class EventTransactionBuffer extends AbstractCanalLifeCycle {
     }
 
     /**
-     * 查询是否有空位
+     * 查询是否有空位---false表示没有空位置了,不能进行put操作了
      */
     private boolean checkFreeSlotAt(final long sequence) {
         final long wrapPoint = sequence - bufferSize;
@@ -136,6 +136,7 @@ public class EventTransactionBuffer extends AbstractCanalLifeCycle {
         return (int) sequcnce & indexMask;
     }
 
+    //是DML操作,即修改数据库的操作
     private boolean isDml(EventType eventType) {
         return eventType == EventType.INSERT || eventType == EventType.UPDATE || eventType == EventType.DELETE;
     }

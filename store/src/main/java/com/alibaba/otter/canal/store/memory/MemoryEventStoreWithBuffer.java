@@ -42,6 +42,7 @@ public class MemoryEventStoreWithBuffer extends AbstractCanalStoreScavenge imple
     private Event[]           entries;//存储事件的队列
 
     // 记录下put/get/ack操作的三个下标
+    //顺序一定是ack   get  put,因为put一定是最大的,数据先进入到buffer中的,然后才能get消费掉,最终客户端提示get消费的数据已经确定了,因此才有的ack
     private AtomicLong        putSequence   = new AtomicLong(INIT_SQEUENCE); // 代表当前put操作最后一次写操作发生的位置
     private AtomicLong        getSequence   = new AtomicLong(INIT_SQEUENCE); // 代表当前get操作读取的最后一条的位置
     private AtomicLong        ackSequence   = new AtomicLong(INIT_SQEUENCE); // 代表当前ack操作的最后一条的位置
@@ -94,13 +95,13 @@ public class MemoryEventStoreWithBuffer extends AbstractCanalStoreScavenge imple
         try {
             try {
                 while (!checkFreeSlotAt(putSequence.get() + data.size())) { // 检查是否有空位
-                    notFull.await(); // wait until not full
+                    notFull.await(); // wait until not full 没有空位置了,则等待
                 }
             } catch (InterruptedException ie) {
                 notFull.signal(); // propagate to non-interrupted thread
                 throw ie;
             }
-            doPut(data);
+            doPut(data);//真正的存放数据
             if (Thread.interrupted()) {
                 throw new InterruptedException();
             }
@@ -269,7 +270,7 @@ public class MemoryEventStoreWithBuffer extends AbstractCanalStoreScavenge imple
         long end = current;
         // 如果startPosition为null，说明是第一次，默认+1处理
         if (startPosition == null || !startPosition.getPostion().isIncluded()) { // 第一次订阅之后，需要包含一下start位置，防止丢失第一条记录
-            next = next + 1;
+            next = next + 1;//从接下来的位置开始抓去
         }
 
         if (current >= maxAbleSequence) {//说明没有空间去get
@@ -322,18 +323,19 @@ public class MemoryEventStoreWithBuffer extends AbstractCanalStoreScavenge imple
 
         }
 
+        //设置查询出来的事件position位置的区间
         PositionRange<LogPosition> range = new PositionRange<LogPosition>();
         result.setPositionRange(range);
 
         range.setStart(CanalEventUtils.createPosition(entrys.get(0)));
         range.setEnd(CanalEventUtils.createPosition(entrys.get(result.getEvents().size() - 1)));
-        // 记录一下是否存在可以被ack的点
 
-        for (int i = entrys.size() - 1; i >= 0; i--) {
+        // 记录一下是否存在可以被ack的点
+        for (int i = entrys.size() - 1; i >= 0; i--) {//找到最后一个事件是事务相关的事件位置,即多个事件集合中,可能存在多个事务.因此获取最后一个事务出现的位置即可
             Event event = entrys.get(i);
-            if (CanalEntry.EntryType.TRANSACTIONBEGIN == event.getEntry().getEntryType()
+            if (CanalEntry.EntryType.TRANSACTIONBEGIN == event.getEntry().getEntryType()//出现事务的位置
                 || CanalEntry.EntryType.TRANSACTIONEND == event.getEntry().getEntryType()
-                || isDdl(event.getEntry().getHeader().getEventType())) {
+                || isDdl(event.getEntry().getHeader().getEventType())) {//出现DDL操作的位置
                 // 将事务头/尾设置可被为ack的点
                 range.setAck(CanalEventUtils.createPosition(event));
                 break;
@@ -405,6 +407,7 @@ public class MemoryEventStoreWithBuffer extends AbstractCanalStoreScavenge imple
         cleanUntil(position);
     }
 
+    //说明该位置已经提交了
     public void cleanUntil(Position position) throws CanalStoreException {
         final ReentrantLock lock = this.lock;
         lock.lock();
@@ -412,12 +415,12 @@ public class MemoryEventStoreWithBuffer extends AbstractCanalStoreScavenge imple
             long sequence = ackSequence.get();
             long maxSequence = getSequence.get();
 
-            boolean hasMatch = false;
+            boolean hasMatch = false;//true表示已经确定找到该点了
             long memsize = 0;
-            for (long next = sequence + 1; next <= maxSequence; next++) {
-                Event event = entries[getIndex(next)];
+            for (long next = sequence + 1; next <= maxSequence; next++) {//从确定ack的位置开始循环,一直到get的位置结束,即消费到的点结束
+                Event event = entries[getIndex(next)];//获取每一个事件
                 memsize += calculateSize(event);
-                boolean match = CanalEventUtils.checkPosition(event, (LogPosition) position);
+                boolean match = CanalEventUtils.checkPosition(event, (LogPosition) position);//找到要清理的哪个点
                 if (match) {// 找到对应的position，更新ack seq
                     hasMatch = true;
 
@@ -444,17 +447,19 @@ public class MemoryEventStoreWithBuffer extends AbstractCanalStoreScavenge imple
         }
     }
 
+    //回滚,即get位置从acl位置开始重新计算
     public void rollback() throws CanalStoreException {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
             getSequence.set(ackSequence.get());
-            getMemSize.set(ackMemSize.get());
+            getMemSize.set(ackMemSize.get());//内存就是ack那个时间点的内存
         } finally {
             lock.unlock();
         }
     }
 
+    //清理所有的数据
     public void cleanAll() throws CanalStoreException {
         final ReentrantLock lock = this.lock;
         lock.lock();
@@ -476,7 +481,7 @@ public class MemoryEventStoreWithBuffer extends AbstractCanalStoreScavenge imple
     }
 
     // =================== helper method =================
-
+    //获取最小的可用的位置
     private long getMinimumGetOrAck() {
         long get = getSequence.get();//get到哪里了
         long ack = ackSequence.get();//确定的是到哪里了
@@ -490,12 +495,14 @@ public class MemoryEventStoreWithBuffer extends AbstractCanalStoreScavenge imple
     private boolean checkFreeSlotAt(final long sequence) {
         final long wrapPoint = sequence - bufferSize;//该值>0,表示序号已经比buff大了,并且大了多少个
         final long minPoint = getMinimumGetOrAck();
+        //比如wrapPoint=100,说明比buffer多了100,因此要向buffer的从0-100之间填写内容了
+        //而minPoint = 80,说明从81之后的数字都不能被消费,显然80-100之间是没办法满足这20个坑的,因此要返回false
         if (wrapPoint > minPoint) { // 刚好追上一轮
             return false;
-        } else {
+        } else {//说明坑够了,但是要继续看内存是否够
             // 在bufferSize模式上，再增加memSize控制
             if (batchMode.isMemSize()) {
-                final long memsize = putMemSize.get() - ackMemSize.get();
+                final long memsize = putMemSize.get() - ackMemSize.get();//已经使用的内存
                 if (memsize < bufferSize * bufferMemUnit) {
                     return true;
                 } else {

@@ -49,6 +49,9 @@ public class AbstractCanalClientTest {
     protected String                          destination;
 
     static {
+        //初始化各自打印的模版
+
+        //哪个批处理ID,抓去了多少条事件,这些事件占用多少内存字节,什么时间点成功被抓去回来的,事件集合的第一个和最后一个的position位置信息(什么时间点打印的,该事件在哪个binlog文件,该事件在binlog文件中的偏移量,该事件在binlog中的执行时间)
         context_format = SEP + "****************************************************" + SEP;
         context_format += "* Batch Id: [{}] ,count : [{}] , memsize : [{}] , Time : {}" + SEP;
         context_format += "* Start : [{}] " + SEP;
@@ -135,14 +138,16 @@ public class AbstractCanalClientTest {
         }
     }
 
+    //打印汇总信息-------打印哪个批处理ID,抓去了多少条事件,这些事件占用多少内存字节,什么时间点成功被抓去回来的,事件集合的第一个和最后一个的position位置信息(什么时间点打印的,该事件在哪个binlog文件,该事件在binlog文件中的偏移量,该事件在binlog中的执行时间)
     private void printSummary(Message message, long batchId, int size) {
-        long memsize = 0;
+        long memsize = 0;//事件总内存数量
         for (Entry entry : message.getEntries()) {
             memsize += entry.getHeader().getEventLength();
         }
 
         String startPosition = null;
         String endPosition = null;
+        //打印第一个和最后一个message的位置
         if (!CollectionUtils.isEmpty(message.getEntries())) {
             startPosition = buildPositionForDump(message.getEntries().get(0));
             endPosition = buildPositionForDump(message.getEntries().get(message.getEntries().size() - 1));
@@ -153,6 +158,7 @@ public class AbstractCanalClientTest {
                 endPosition });
     }
 
+    //位置信息描述----什么时间点打印的,该事件在哪个binlog文件,该事件在binlog文件中的偏移量,该事件在binlog中的执行时间
     protected String buildPositionForDump(Entry entry) {
         long time = entry.getHeader().getExecuteTime();
         Date date = new Date(time);
@@ -161,13 +167,14 @@ public class AbstractCanalClientTest {
                + entry.getHeader().getExecuteTime() + "(" + format.format(date) + ")";
     }
 
+    //打印每一个事件的内容
     protected void printEntry(List<Entry> entrys) {
         for (Entry entry : entrys) {
             long executeTime = entry.getHeader().getExecuteTime();
-            long delayTime = new Date().getTime() - executeTime;
+            long delayTime = new Date().getTime() - executeTime;//记录客户端收到时候---真正执行的时候的延迟时间
 
-            if (entry.getEntryType() == EntryType.TRANSACTIONBEGIN || entry.getEntryType() == EntryType.TRANSACTIONEND) {
-                if (entry.getEntryType() == EntryType.TRANSACTIONBEGIN) {
+            if (entry.getEntryType() == EntryType.TRANSACTIONBEGIN || entry.getEntryType() == EntryType.TRANSACTIONEND) {//关于事务的处理
+                if (entry.getEntryType() == EntryType.TRANSACTIONBEGIN) {//事务开始
                     TransactionBegin begin = null;
                     try {
                         begin = TransactionBegin.parseFrom(entry.getStoreValue());

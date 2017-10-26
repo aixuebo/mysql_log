@@ -10,7 +10,7 @@ import com.alibaba.otter.canal.common.utils.CanalToStringStyle;
 /**
  * @author zebin.xuzb @ 2012-6-20
  * @version 1.0.0
- * 表示一个客户端配置
+ * 表示一个客户端配置--服务器接收到的客户端对象
  */
 public class ClientIdentity implements Serializable {
 

@@ -19,7 +19,7 @@ public class CanalEventUtils {
      * 找出一个最小的position位置，相等的情况返回position1
      */
     public static LogPosition min(LogPosition position1, LogPosition position2) {
-        if (position1.getIdentity().equals(position2.getIdentity())) {
+        if (position1.getIdentity().equals(position2.getIdentity())) {//说明主从库相同
             // 首先根据文件进行比较
             if (position1.getPostion().getJournalName().compareTo(position2.getPostion().getJournalName()) > 0) {
                 return position2;
@@ -82,6 +82,7 @@ public class CanalEventUtils {
         CanalEntry.Entry entry = event.getEntry();
         boolean result = position.getTimestamp().equals(entry.getHeader().getExecuteTime());
 
+        //如果有文件名字以及binlog的偏移量,则更精准比较
         boolean exactely = (StringUtils.isBlank(position.getJournalName()) && position.getPosition() == null);
         if (!exactely) {// 精确匹配
             result &= StringUtils.equals(entry.getHeader().getLogfileName(), position.getJournalName());

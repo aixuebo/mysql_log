@@ -13,7 +13,7 @@ import com.alibaba.otter.canal.server.netty.NettyUtils;
 
 /**
  * handshake交互
- * 
+ * 握手交互
  * @author jianghang 2012-10-24 上午11:39:54
  * @version 1.0.0
  */
@@ -21,6 +21,7 @@ public class HandshakeInitializationHandler extends SimpleChannelHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(HandshakeInitializationHandler.class);
 
+    //发送握手事件给客户端,内容就是一个空的内容
     public void channelOpen(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
         byte[] body = Packet.newBuilder()
             .setType(CanalPacket.PacketType.HANDSHAKE)

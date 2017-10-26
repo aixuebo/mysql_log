@@ -7,7 +7,7 @@ import org.apache.commons.lang.builder.ToStringBuilder;
 import com.alibaba.otter.canal.common.utils.CanalToStringStyle;
 
 /**
- * 描述一个position范围
+ * 描述一个position范围---表示一个批处理的结果集
  * 
  * @author jianghang 2012-7-10 下午05:28:38
  * @version 1.0.0
@@ -15,10 +15,10 @@ import com.alibaba.otter.canal.common.utils.CanalToStringStyle;
 public class PositionRange<T extends Position> implements Serializable {
 
     private static final long serialVersionUID = -9162037079815694784L;
-    private T                 start;
+    private T                 start;//一般是LogPosition对象
     // add by ljh at 2012-09-05，用于记录一个可被ack的位置，保证每次提交到cursor中的位置是一个完整事务的结束
-    private T                 ack;
-    private T                 end;
+    private T                 ack;//最后一个出现事务或者DDL操作的位置,一般是LogPosition对象
+    private T                 end;//一般是LogPosition对象
 
     public PositionRange(){
     }

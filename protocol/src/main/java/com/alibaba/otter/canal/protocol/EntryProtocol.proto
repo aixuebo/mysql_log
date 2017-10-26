@@ -8,6 +8,7 @@ option optimize_for = SPEED;
  * message model
  *如果要在Enum中新增类型，确保以前的类型的下标值不变.
  ****************************************************************/
+ //表示一个事件对象,该事件已经不是binlog自己的事件了,而是canal自己封装的事件
 message Entry {
 	/**协议头部信息**/
 	optional Header						header 				= 1;
@@ -25,22 +26,22 @@ message Header {
 	optional int32 					version				= 1 [default = 1];	
 	
 	/**binlog/redolog 文件名**/
-	optional string					logfileName			= 2;
+	optional string					logfileName			= 2;//binlog的文件名
 	
 	/**binlog/redolog 文件的偏移位置**/
-	optional int64 					logfileOffset		= 3;
+	optional int64 					logfileOffset		= 3;//该事件在binlog中的偏移量,算法是binlog提供的下一个事件的开始位置-该事件的总长度,就是该事件在文件中的位置
 	
 	/**服务端serverId**/
-	optional 	int64				serverId         	= 4;	
+	optional 	int64				serverId         	= 4;//master的服务器ID编号
 	
 	/** 变更数据的编码 **/
 	optional string					serverenCode		= 5;
 	
 	/**变更数据的执行时间 **/
-	optional int64					executeTime			= 6;
+	optional int64					executeTime			= 6;//在master上执行该事件的时间
 	
 	/** 变更数据的来源**/
-	optional Type					sourceType			= 7 [default = MYSQL];
+	optional Type					sourceType			= 7 [default = MYSQL];//默认是mysql
 	
 	/** 变更数据的schemaname**/
 	optional string					schemaName			= 8;
@@ -49,13 +50,13 @@ message Header {
 	optional string					tableName			= 9;	
 	
 	/**每个event的长度**/
-	optional int64					eventLength         = 10;
+	optional int64					eventLength         = 10;//事件的总字节数
 	
 	/**数据变更类型**/
-	optional EventType 				eventType			= 11 [default = UPDATE];
+	optional EventType 				eventType			= 11 [default = UPDATE];//事件类型
 	
 	/**预留扩展**/
-	repeated Pair					props				= 12;		
+	repeated Pair					props				= 12;//若干个键值对集合
 }
 
 /**每个字段的数据结构**/
@@ -157,7 +158,7 @@ message TransactionEnd{
 	repeated Pair			props			=		3;	
 }
 
-/**预留扩展**/
+/**预留扩展 用于存储key=value的键值对信息**/
 message Pair{
 	optional string 		key				= 			1;	
 	optional string 		value			= 			2;	
@@ -165,9 +166,9 @@ message Pair{
 
 /**打散后的事件类型，主要用于标识事务的开始，变更数据，结束**/
 enum EntryType{
-	TRANSACTIONBEGIN 		=		1;
+	TRANSACTIONBEGIN 		=		1;//事务开启事件
 	ROWDATA					=		2;
-	TRANSACTIONEND			=		3;
+	TRANSACTIONEND			=		3;//事务关闭事件
 	/** 心跳类型，内部使用，外部暂不可见，可忽略,心跳事件**/
 	HEARTBEAT				=		4; 
 }
@@ -177,15 +178,15 @@ enum EventType {
     INSERT 		= 		1;
     UPDATE 		= 		2;
     DELETE 		= 		3;
-    CREATE		= 		4;
-    ALTER		= 		5;
+    CREATE		= 		4;//创建表
+    ALTER		= 		5;//更改表信息
     ERASE		= 		6;
     QUERY		=		7;
     TRUNCATE	=		8;
-    RENAME 		= 		9;
+    RENAME 		= 		9;//表重命名
     /**CREATE INDEX**/
-    CINDEX		= 		10;
-    DINDEX 		= 		11;
+    CINDEX		= 		10;//创建索引
+    DINDEX 		= 		11;//删除索引
 }
 
 /**数据库类型**/

@@ -14,8 +14,8 @@ import com.alibaba.otter.canal.client.CanalNodeAccessStrategy;
  */
 public class SimpleNodeAccessStrategy implements CanalNodeAccessStrategy {
 
-    private List<SocketAddress> nodes = new ArrayList<SocketAddress>();
-    private int                 index = 0;
+    private List<SocketAddress> nodes = new ArrayList<SocketAddress>();//持有一组Ip集合,该集群的ip集合会切换为客户端进行服务
+    private int                 index = 0;//当前使用的ip
 
     public SimpleNodeAccessStrategy(List<? extends SocketAddress> nodes){
         if (nodes == null || nodes.size() < 1) {

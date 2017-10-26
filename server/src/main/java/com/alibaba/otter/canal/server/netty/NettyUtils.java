@@ -31,6 +31,7 @@ public class NettyUtils {
         }
     }
 
+    //发送给客户端的response信息
     public static void ack(Channel channel, ChannelFutureListener channelFutureListner) {
         write(channel,
             Packet.newBuilder()

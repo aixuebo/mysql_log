@@ -45,20 +45,20 @@ public class ClientAuthenticationHandler extends SimpleChannelHandler {
 
     public void messageReceived(final ChannelHandlerContext ctx, MessageEvent e) throws Exception {
         ChannelBuffer buffer = (ChannelBuffer) e.getMessage();
-        final Packet packet = Packet.parseFrom(buffer.readBytes(buffer.readableBytes()).array());
+        final Packet packet = Packet.parseFrom(buffer.readBytes(buffer.readableBytes()).array());//返回接收到的包
         switch (packet.getVersion()) {
             case SUPPORTED_VERSION:
             default:
-                final ClientAuth clientAuth = ClientAuth.parseFrom(packet.getBody());
+                final ClientAuth clientAuth = ClientAuth.parseFrom(packet.getBody());//客户端传递的权限信息对象
                 // 如果存在订阅信息
                 if (StringUtils.isNotEmpty(clientAuth.getDestination())
                     && StringUtils.isNotEmpty(clientAuth.getClientId())) {
-                    ClientIdentity clientIdentity = new ClientIdentity(clientAuth.getDestination(),
+                    ClientIdentity clientIdentity = new ClientIdentity(clientAuth.getDestination(),//表示一个客户端配置--服务器接收到的客户端对象
                         Short.valueOf(clientAuth.getClientId()),
                         clientAuth.getFilter());
                     try {
                         MDC.put("destination", clientIdentity.getDestination());
-                        embeddedServer.subscribe(clientIdentity);
+                        embeddedServer.subscribe(clientIdentity);//添加该客户端
                         ctx.setAttachment(clientIdentity);// 设置状态数据
                         // 尝试启动，如果已经启动，忽略
                         if (!embeddedServer.isStart(clientIdentity.getDestination())) {
@@ -72,10 +72,12 @@ public class ClientAuthenticationHandler extends SimpleChannelHandler {
                     }
                 }
 
+                //回复给客户端信息
                 NettyUtils.ack(ctx.getChannel(), new ChannelFutureListener() {
 
                     public void operationComplete(ChannelFuture future) throws Exception {
                         logger.info("remove unused channel handlers after authentication is done successfully.");
+                        //因为连接已经连理成功,因此可以删除鉴权内容的插件
                         ctx.getPipeline().remove(HandshakeInitializationHandler.class.getName());
                         ctx.getPipeline().remove(ClientAuthenticationHandler.class.getName());
 
@@ -91,6 +93,8 @@ public class ClientAuthenticationHandler extends SimpleChannelHandler {
                             readTimeout,
                             writeTimeout,
                             0);
+
+                        //在处理请求前面插入一个组件
                         ctx.getPipeline().addBefore(SessionHandler.class.getName(),
                             IdleStateHandler.class.getName(),
                             idleStateHandler);

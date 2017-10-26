@@ -25,6 +25,7 @@ import com.taobao.tddl.dbsync.binlog.LogContext;
 import com.taobao.tddl.dbsync.binlog.LogDecoder;
 import com.taobao.tddl.dbsync.binlog.LogEvent;
 
+//连接mysql获取binlog
 public class MysqlConnection implements ErosaConnection {
 
     private static final Logger logger  = LoggerFactory.getLogger(MysqlConnection.class);
@@ -109,7 +110,7 @@ public class MysqlConnection implements ErosaConnection {
     public void dump(String binlogfilename, Long binlogPosition, SinkFunction func) throws IOException {
         updateSettings();
         sendBinlogDump(binlogfilename, binlogPosition);//设置要读取哪些binlog信息,通知master节点
-        DirectLogFetcher fetcher = new DirectLogFetcher(connector.getReceiveBufferSize());
+        DirectLogFetcher fetcher = new DirectLogFetcher(connector.getReceiveBufferSize());//采用socket的方式,不断的从mater上获取数据
         fetcher.start(connector.getChannel());
         LogDecoder decoder = new LogDecoder(LogEvent.UNKNOWN_EVENT, LogEvent.ENUM_END_EVENT);
         LogContext context = new LogContext();
@@ -137,7 +138,7 @@ public class MysqlConnection implements ErosaConnection {
         BinlogDumpCommandPacket binlogDumpCmd = new BinlogDumpCommandPacket();//组装发送binlog的命令
         binlogDumpCmd.binlogFileName = binlogfilename;
         binlogDumpCmd.binlogPosition = binlogPosition;
-        binlogDumpCmd.slaveServerId = this.slaveId;
+        binlogDumpCmd.slaveServerId = this.slaveId;//发送请求的是哪个slave节点
         byte[] cmdBody = binlogDumpCmd.toBytes();//要发送的数据--属于要发送给master的信息
 
         logger.info("COM_BINLOG_DUMP with position:{}", binlogDumpCmd);

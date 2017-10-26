@@ -8,5 +8,6 @@ package com.alibaba.otter.canal.store;
  */
 public interface CanalGroupEventStore<T> extends CanalEventStore<T> {
 
+    //添加一个存储器
     void addStoreInfo(StoreInfo info);
 }

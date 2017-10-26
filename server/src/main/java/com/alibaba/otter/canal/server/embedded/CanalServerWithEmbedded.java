@@ -33,7 +33,7 @@ import com.google.common.collect.MigrateMap;
 
 /**
  * 嵌入式版本实现
- * 
+ * 是netty网络服务的基础---网络服务只是开启了一个网络接口,真正调用的逻辑还是该类本身
  * @author jianghang 2012-7-12 下午01:34:00
  * @author zebin.xuzb
  * @version 1.0.0
@@ -143,7 +143,7 @@ public class CanalServerWithEmbedded extends AbstractCanalLifeCycle implements C
 
         canalInstance.getMetaManager().subscribe(clientIdentity); // 执行一下meta订阅
 
-        Position position = canalInstance.getMetaManager().getCursor(clientIdentity);
+        Position position = canalInstance.getMetaManager().getCursor(clientIdentity);//获取客户端的指针
         if (position == null) {
             position = canalInstance.getEventStore().getFirstPosition();// 获取一下store中的第一条
             if (position != null) {
@@ -205,22 +205,22 @@ public class CanalServerWithEmbedded extends AbstractCanalLifeCycle implements C
     @Override
     public Message get(ClientIdentity clientIdentity, int batchSize, Long timeout, TimeUnit unit)
                                                                                                  throws CanalServerException {
-        checkStart(clientIdentity.getDestination());
-        checkSubscribe(clientIdentity);
-        CanalInstance canalInstance = canalInstances.get(clientIdentity.getDestination());
+        checkStart(clientIdentity.getDestination());//校验队列是否存在
+        checkSubscribe(clientIdentity);//校验客户端是否订阅了
+        CanalInstance canalInstance = canalInstances.get(clientIdentity.getDestination());//获取服务器上的队列实例
         synchronized (canalInstance) {
             // 获取到流式数据中的最后一批获取的位置
             PositionRange<LogPosition> positionRanges = canalInstance.getMetaManager().getLastestBatch(clientIdentity);
 
-            if (positionRanges != null) {
+            if (positionRanges != null) {//说明客户端最后获取的批处理,没有提交,可能丢失数据了
                 throw new CanalServerException(String.format("clientId:%s has last batch:[%s] isn't ack , maybe loss data",
                     clientIdentity.getClientId(),
                     positionRanges));
             }
 
             Events<Event> events = null;
-            Position start = canalInstance.getMetaManager().getCursor(clientIdentity);
-            events = getEvents(canalInstance.getEventStore(), start, batchSize, timeout, unit);
+            Position start = canalInstance.getMetaManager().getCursor(clientIdentity);//客户端的位置
+            events = getEvents(canalInstance.getEventStore(), start, batchSize, timeout, unit);//获取该位置之后的数据
 
             if (CollectionUtils.isEmpty(events.getEvents())) {
                 logger.debug("get successfully, clientId:{} batchSize:{} but result is null", new Object[] {
@@ -228,8 +228,8 @@ public class CanalServerWithEmbedded extends AbstractCanalLifeCycle implements C
                 return new Message(-1, new ArrayList<Entry>()); // 返回空包，避免生成batchId，浪费性能
             } else {
                 // 记录到流式信息
-                Long batchId = canalInstance.getMetaManager().addBatch(clientIdentity, events.getPositionRange());
-                List<Entry> entrys = Lists.transform(events.getEvents(), new Function<Event, Entry>() {
+                Long batchId = canalInstance.getMetaManager().addBatch(clientIdentity, events.getPositionRange());//创建一个批处理
+                List<Entry> entrys = Lists.transform(events.getEvents(), new Function<Event, Entry>() {//将抓去回来的事件转换成Entry对象
 
                     public Entry apply(Event input) {
                         return input.getEntry();
@@ -474,6 +474,7 @@ public class CanalServerWithEmbedded extends AbstractCanalLifeCycle implements C
         }
     }
 
+    //校验该客户端是否订阅了
     private void checkSubscribe(ClientIdentity clientIdentity) {
         CanalInstance canalInstance = canalInstances.get(clientIdentity.getDestination());
         boolean hasSubscribe = canalInstance.getMetaManager().hasSubscribe(clientIdentity);
@@ -483,6 +484,7 @@ public class CanalServerWithEmbedded extends AbstractCanalLifeCycle implements C
         }
     }
 
+    //校验该队列是否存在
     private void checkStart(String destination) {
         if (!isStart(destination)) {
             throw new CanalServerException(String.format("destination:%s should start first", destination));

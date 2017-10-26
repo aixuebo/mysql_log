@@ -11,7 +11,7 @@ import com.alibaba.otter.canal.protocol.position.PositionRange;
 
 /**
  * 代表一组数据对象的集合
- * 
+ * 即一个批处理
  * @author jianghang 2012-6-14 下午09:07:41
  * @version 1.0.0
  */
@@ -19,7 +19,7 @@ public class Events<EVENT> implements Serializable {
 
     private static final long serialVersionUID = -7337454954300706044L;
 
-    private PositionRange     positionRange    = new PositionRange();
+    private PositionRange     positionRange    = new PositionRange();//批处理的binlog区间以及批处理ID
     private List<EVENT>       events           = new ArrayList<EVENT>();//事件集合
 
     public List<EVENT> getEvents() {

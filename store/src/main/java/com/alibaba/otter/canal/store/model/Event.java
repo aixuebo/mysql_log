@@ -18,7 +18,7 @@ public class Event implements Serializable {
     private static final long serialVersionUID = 1333330351758762739L;
 
     private LogIdentity       logIdentity;                            // 记录数据产生的来源
-    private CanalEntry.Entry  entry;
+    private CanalEntry.Entry  entry;//事件对应的实体对象
 
     public Event(){
     }

@@ -12,7 +12,7 @@ public class EntryPosition extends TimePosition {
     public static final int   EVENTIDENTITY_SEGMENT = 3;
     public static final char  EVENTIDENTITY_SPLIT   = (char) 5;
 
-    private boolean           included              = false;
+    private boolean           included              = false;//true表示要抓去的节点包含该位置的节点
     private String            journalName;//binlog文件
     private Long              position;//binlog文件的偏移量位置
 

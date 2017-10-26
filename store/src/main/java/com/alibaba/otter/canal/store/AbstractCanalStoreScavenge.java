@@ -15,11 +15,12 @@ import com.alibaba.otter.canal.protocol.position.Position;
  * 
  * @author jianghang 2012-8-8 下午12:57:36
  * @version 1.0.0
+ * 找到最小的客户端确定的位置,用于删除该位置之前的数据
  */
 public abstract class AbstractCanalStoreScavenge extends AbstractCanalLifeCycle implements CanalStoreScavenge {
 
-    protected String           destination;
-    protected CanalMetaManager canalMetaManager;
+    protected String           destination;//要监控的队列
+    protected CanalMetaManager canalMetaManager;//server上的元数据中心
     protected boolean          onAck            = true;
     protected boolean          onFull           = false;
     protected boolean          onSchedule       = false;
@@ -32,16 +33,17 @@ public abstract class AbstractCanalStoreScavenge extends AbstractCanalLifeCycle 
 
     /**
      * 找出该destination中可被清理掉的position位置
-     * 
+     *
+     * 即所有监听该destination队列的客户端集合,循环每一个客户端,找到每一个客户端ack确定的最小的位置
      * @param destination
      */
     private Position getLatestAckPosition(String destination) {
-        List<ClientIdentity> clientIdentitys = canalMetaManager.listAllSubscribeInfo(destination);
+        List<ClientIdentity> clientIdentitys = canalMetaManager.listAllSubscribeInfo(destination);//所有监听该destination队列的客户端集合
         LogPosition result = null;
         if (!CollectionUtils.isEmpty(clientIdentitys)) {
             // 尝试找到一个最小的logPosition
-            for (ClientIdentity clientIdentity : clientIdentitys) {
-                LogPosition position = (LogPosition) canalMetaManager.getCursor(clientIdentity);
+            for (ClientIdentity clientIdentity : clientIdentitys) {//循环每一个客户端
+                LogPosition position = (LogPosition) canalMetaManager.getCursor(clientIdentity);//找到每一个客户端ack确定的最小的位置
                 if (position == null) {
                     continue;
                 }

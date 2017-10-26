@@ -55,7 +55,7 @@ public class SessionHandler extends SimpleChannelHandler {
     public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
         logger.info("message receives in session handler...");
         ChannelBuffer buffer = (ChannelBuffer) e.getMessage();
-        Packet packet = Packet.parseFrom(buffer.readBytes(buffer.readableBytes()).array());
+        Packet packet = Packet.parseFrom(buffer.readBytes(buffer.readableBytes()).array());//接收客户端发过来的包对象
         ClientIdentity clientIdentity = null;
         try {
             switch (packet.getType()) {

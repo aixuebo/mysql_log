@@ -8,8 +8,8 @@ package com.alibaba.otter.canal.client.impl.running;
  */
 public class ClientRunningData {
 
-    private short   clientId;
-    private String  address;
+    private short   clientId;//客户端ID
+    private String  address;//客户端本地的ip地址信息
     private boolean active = true;
 
     public short getClientId() {

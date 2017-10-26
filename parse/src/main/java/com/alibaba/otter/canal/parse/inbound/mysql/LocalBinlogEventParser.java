@@ -24,7 +24,7 @@ public class LocalBinlogEventParser extends AbstractMysqlEventParser implements 
     private AuthenticationInfo masterInfo;
     private EntryPosition      masterPosition;        // binlog信息
 
-    private String             directory;
+    private String             directory;//binlog的目录
     private boolean            needWait   = false;
     private int                bufferSize = 16 * 1024;
 

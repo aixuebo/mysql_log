@@ -28,13 +28,14 @@ public class ClusterNodeAccessStrategy implements CanalNodeAccessStrategy {
     private IZkChildListener                 childListener;                                      // 监听所有的服务器列表
     private IZkDataListener                  dataListener;                                       // 监听当前的工作节点
     private ZkClientx                        zkClient;
-    private volatile List<InetSocketAddress> currentAddress = new ArrayList<InetSocketAddress>();
-    private volatile InetSocketAddress       runningAddress = null;
+    private volatile List<InetSocketAddress> currentAddress = new ArrayList<InetSocketAddress>();//初始化集群下所有的节点集合
+    private volatile InetSocketAddress       runningAddress = null;//正在运行的节点
 
     public ClusterNodeAccessStrategy(String destination, ZkClientx zkClient){
         this.zkClient = zkClient;
         childListener = new IZkChildListener() {
 
+            //初始化集群下所有的节点集合
             public void handleChildChange(String parentPath, List<String> currentChilds) throws Exception {
                 initClusters(currentChilds);
             }
@@ -47,6 +48,7 @@ public class ClusterNodeAccessStrategy implements CanalNodeAccessStrategy {
                 runningAddress = null;
             }
 
+            //说明运行的节点已经发生更改了
             public void handleDataChange(String dataPath, Object data) throws Exception {
                 initRunning(data);
             }
@@ -77,6 +79,7 @@ public class ClusterNodeAccessStrategy implements CanalNodeAccessStrategy {
         }
     }
 
+    //初始化集群下所有的节点集合
     private void initClusters(List<String> currentChilds) {
         if (currentChilds == null || currentChilds.isEmpty()) {
             currentAddress = new ArrayList<InetSocketAddress>();
@@ -94,6 +97,7 @@ public class ClusterNodeAccessStrategy implements CanalNodeAccessStrategy {
         }
     }
 
+    //参数表示正在运行的节点
     private void initRunning(Object data) {
         if (data == null) {
             return;
