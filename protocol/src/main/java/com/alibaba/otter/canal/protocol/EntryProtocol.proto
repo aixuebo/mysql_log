@@ -14,16 +14,16 @@ message Entry {
 	optional Header						header 				= 1;
 	
 	/**打散后的事件类型**/
-	optional EntryType					entryType			= 2 [default = ROWDATA];
+	optional EntryType					entryType			= 2 [default = ROWDATA];//事件类型--entry设置的类型
 	
 	/**传输的二进制数组**/
-	optional bytes						storeValue			= 3;
+	optional bytes						storeValue			= 3;//事件的具体内容,不同类型对应不同的对象
 }
 
 /**message Header**/
 message Header {
 	/**协议的版本号**/
-	optional int32 					version				= 1 [default = 1];	
+	optional int32 					version				= 1 [default = 1];	//固定写死的1
 	
 	/**binlog/redolog 文件名**/
 	optional string					logfileName			= 2;//binlog的文件名
@@ -38,7 +38,7 @@ message Header {
 	optional string					serverenCode		= 5;
 	
 	/**变更数据的执行时间 **/
-	optional int64					executeTime			= 6;//在master上执行该事件的时间
+	optional int64					executeTime			= 6;//在master上执行该事件的开始时间
 	
 	/** 变更数据的来源**/
 	optional Type					sourceType			= 7 [default = MYSQL];//默认是mysql
@@ -53,7 +53,7 @@ message Header {
 	optional int64					eventLength         = 10;//事件的总字节数
 	
 	/**数据变更类型**/
-	optional EventType 				eventType			= 11 [default = UPDATE];//事件类型
+	optional EventType 				eventType			= 11 [default = UPDATE];//事件类型--entry对应的事件类型
 	
 	/**预留扩展**/
 	repeated Pair					props				= 12;//若干个键值对集合
@@ -62,22 +62,22 @@ message Header {
 /**每个字段的数据结构**/
 message Column {
 	/**字段下标**/
-	optional int32		index			= 		1;
+	optional int32		index			= 		1;//是表的第几个列,此时从0开始计数,该值是数据库原数据对应的字段位置
 	
 	/**字段java中类型**/
-	optional int32 		sqlType			= 		2;
+	optional int32 		sqlType			= 		2;//java中的字段类型
 	
 	/**字段名称(忽略大小写)，在mysql中是没有的**/
 	optional string		name			=		3;
 	
 	/**是否是主键**/
-	optional bool 		isKey			= 		4;
+	optional bool 		isKey			= 		4;//是否是主键
 	
 	/**如果EventType=UPDATE,用于标识这个字段值是否有修改**/
-	optional bool		updated			= 		5;
+	optional bool		updated			= 		5; //true表示这个列的值确实是在update前后有变化了
 	
 	/** 标识是否为空  **/
-	optional bool		isNull			= 		6 [default = false];
+	optional bool		isNull			= 		6 [default = false];//表示该值是否是null
 	
 	/**预留扩展**/
 	repeated Pair		props			=		7;	
@@ -89,15 +89,16 @@ message Column {
 	optional int32		length			= 		9;
 	
 	/**字段mysql类型**/
-	optional string		mysqlType		= 		10;
+	optional string		mysqlType		= 		10;//mysql中的字段类型
 }
 
+//表示一行数据
 message RowData {
 
-	/** 字段信息，增量数据(修改前,删除前) **/
-	repeated Column			beforeColumns  	= 		1;
+	/** 字段信息，增量数据(修改前,删除前) 比如用于delete和update中的原始内容部分**/
+	repeated Column			beforeColumns  	= 		1;//repeated表示包含多个列
 
-	/** 字段信息，增量数据(修改后,新增后)  **/
+	/** 字段信息，增量数据(修改后,新增后)  用于inssert和update中修改后的内容部分 **/
 	repeated Column			afterColumns	= 		2;
 	
 	/**预留扩展**/
@@ -108,7 +109,7 @@ message RowData {
 message RowChange {
 
 	/**tableId,由数据库产生**/
-	optional int64	 		tableId			=		1;
+	optional int64	 		tableId			=		1; //要操作的是哪个表
 	
 	/**数据变更类型**/
 	optional EventType 		eventType		= 		2 [default = UPDATE];
@@ -116,17 +117,17 @@ message RowChange {
 	/** 标识是否是ddl语句  **/
 	optional bool			isDdl			= 		10 [default = false];
 
-	/** ddl/query的sql语句  **/
+	/** ddl/query的sql语句 执行的sql内容 **/
 	optional string			sql 			= 		11;
 	
 	/** 一次数据库变更可能存在多行  **/
-	repeated RowData		rowDatas		= 		12;
+	repeated RowData		rowDatas		= 		12;//表示多行
 	
 	/**预留扩展**/
 	repeated Pair			props			=		13;	
 	
 	/** ddl/query的schemaName，会存在跨库ddl，需要保留执行ddl的当前schemaName  **/
-	optional string			ddlSchemaName 	= 		14;
+	optional string			ddlSchemaName 	= 		14;//要操作的是哪个数据库
 }
 
 /**开始事务的一些信息**/
@@ -142,7 +143,7 @@ message TransactionBegin{
 	repeated Pair			props			=		3;	
 	
 	/**执行的thread Id**/
-	optional int64			threadId		=		4;
+	optional int64			threadId		=		4;//query 模式下begin 对应的线程ID
 }
 
 /**结束事务的一些信息**/
@@ -152,7 +153,7 @@ message TransactionEnd{
 	optional int64			executeTime		=		1;
 	
 	/**事务号**/
-	optional string			transactionId	=		2;
+	optional string			transactionId	=		2; //XidEvent事件的xid内容   或者 query中MyISAM可能不会有xid事件,因此遇到commit的时候,创建该对象
 	
 	/**预留扩展**/
 	repeated Pair			props			=		3;	
@@ -167,10 +168,10 @@ message Pair{
 /**打散后的事件类型，主要用于标识事务的开始，变更数据，结束**/
 enum EntryType{
 	TRANSACTIONBEGIN 		=		1;//事务开启事件
-	ROWDATA					=		2;
-	TRANSACTIONEND			=		3;//事务关闭事件
+	ROWDATA					=		2;//数据变更
+	TRANSACTIONEND			=		3;//事务关闭事件  xid事务结束事件
 	/** 心跳类型，内部使用，外部暂不可见，可忽略,心跳事件**/
-	HEARTBEAT				=		4; 
+	HEARTBEAT				=		4; //注意:该事件是canal的server发送的,不是binlog接收到的事件
 }
 
 /** 事件类型 **/
@@ -180,13 +181,13 @@ enum EventType {
     DELETE 		= 		3;
     CREATE		= 		4;//创建表
     ALTER		= 		5;//更改表信息
-    ERASE		= 		6;
+    ERASE		= 		6;//drop table
     QUERY		=		7;
-    TRUNCATE	=		8;
+    TRUNCATE	=		8;//TRUNCATE table
     RENAME 		= 		9;//表重命名
     /**CREATE INDEX**/
-    CINDEX		= 		10;//创建索引
-    DINDEX 		= 		11;//删除索引
+    CINDEX		= 		10;//创建索引 create index
+    DINDEX 		= 		11;//删除索引 drop index
 }
 
 /**数据库类型**/

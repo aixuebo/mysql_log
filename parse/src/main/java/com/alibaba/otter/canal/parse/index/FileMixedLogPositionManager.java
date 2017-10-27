@@ -25,7 +25,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.MigrateMap;
 
 /**
- * 基于文件刷新的log position实现
+ * 基于文件刷新的log position实现----基于内存先缓存一下
  * 
  * <pre>
  * 策略：
@@ -35,21 +35,22 @@ import com.google.common.collect.MigrateMap;
  * 
  * @author jianghang 2013-4-15 下午09:40:48
  * @version 1.0.4
+ * 每一个队列destination都有一个单独的文件
  */
 public class FileMixedLogPositionManager extends MemoryLogPositionManager {
 
     private static final Logger      logger       = LoggerFactory.getLogger(FileMixedLogPositionManager.class);
     private static final Charset     charset      = Charset.forName("UTF-8");
-    private File                     dataDir;
-    private String                   dataFileName = "parse.dat";
-    private Map<String, File>        dataFileCaches;
+    private File                     dataDir;//目录
+    private String                   dataFileName = "parse.dat";//文件名
+    private Map<String, File>        dataFileCaches;//每一个destination对应的文件映射
     private ScheduledExecutorService executor;
     @SuppressWarnings("serial")
     private final LogPosition        nullPosition = new LogPosition() {
                                                   };
 
     private long                     period       = 1000;                                                      // 单位ms
-    private Set<String>              persistTasks;
+    private Set<String>              persistTasks;//有更改的destination,因此调度里面要进行重写
 
     public void start() {
         super.start();
@@ -118,11 +119,11 @@ public class FileMixedLogPositionManager extends MemoryLogPositionManager {
 
     public void persistLogPosition(String destination, LogPosition logPosition) {
         persistTasks.add(destination);// 添加到任务队列中进行触发
-        super.persistLogPosition(destination, logPosition);
+        super.persistLogPosition(destination, logPosition);//添加到内存中
     }
 
     public LogPosition getLatestIndexBy(String destination) {
-        LogPosition logPostion = super.getLatestIndexBy(destination);
+        LogPosition logPostion = super.getLatestIndexBy(destination);//从内存中获取
         if (logPostion == nullPosition) {
             return null;
         } else {
@@ -131,7 +132,7 @@ public class FileMixedLogPositionManager extends MemoryLogPositionManager {
     }
 
     // ============================ helper method ======================
-
+    //获取destination队列对应的文件
     private File getDataFile(String destination) {
         File destinationMetaDir = new File(dataDir, destination);
         if (!destinationMetaDir.exists()) {
@@ -155,6 +156,7 @@ public class FileMixedLogPositionManager extends MemoryLogPositionManager {
         flushDataToFile(destination, dataFileCaches.get(destination));
     }
 
+    //将内存中队列对应的json信息写入到文件中
     private void flushDataToFile(String destination, File dataFile) {
         LogPosition position = positions.get(destination);
         if (position != null && position != nullPosition) {
@@ -167,6 +169,7 @@ public class FileMixedLogPositionManager extends MemoryLogPositionManager {
         }
     }
 
+    //加载destination队列对应的文件--文件内容是LogPosition对应的json信息
     private LogPosition loadDataFromFile(File dataFile) {
         try {
             if (!dataFile.exists()) {

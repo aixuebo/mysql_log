@@ -10,6 +10,7 @@ public interface HeartBeatCallback {
 
     /**
      * 心跳发送成功
+     * 参数是心跳过程耗时
      */
     public void onSuccess(long costTime);
 

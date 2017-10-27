@@ -10,7 +10,7 @@ import com.alibaba.otter.canal.common.zookeeper.ZookeeperPathUtils;
 import com.alibaba.otter.canal.protocol.position.LogPosition;
 
 /**
- * 基于zk的实现
+ * 基于zk的实现---zookeeper上记录每一个队列已经同步master的哪个日志位置了
  * 
  * @author jianghang 2012-7-7 上午10:08:27
  * @version 1.0.0

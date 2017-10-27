@@ -18,7 +18,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.MigrateMap;
 
 /**
- * 基于定时刷新的策略的mixed实现
+ * 基于定时刷新的策略的mixed实现----定期将内存的数据写入到zookeeper中
  * 
  * @author jianghang 2012-9-12 上午11:18:14
  * @version 1.0.0
@@ -88,9 +88,10 @@ public class PeriodMixedLogPositionManager extends MemoryLogPositionManager impl
 
     public void persistLogPosition(String destination, LogPosition logPosition) {
         persistTasks.add(destination);// 添加到任务队列中进行触发
-        super.persistLogPosition(destination, logPosition);
+        super.persistLogPosition(destination, logPosition);//添加到内存中
     }
 
+    //从内存中获取数据
     public LogPosition getLatestIndexBy(String destination) {
         LogPosition logPostion = super.getLatestIndexBy(destination);
         if (logPostion == nullPosition) {

@@ -34,6 +34,7 @@ public class MixedLogPositionManager extends MemoryLogPositionManager implements
             zooKeeperLogPositionManager.start();
         }
         executor = Executors.newFixedThreadPool(1);
+        //从zookeeper中进行初始化数据
         positions = MigrateMap.makeComputingMap(new Function<String, LogPosition>() {
 
             public LogPosition apply(String destination) {
@@ -57,6 +58,7 @@ public class MixedLogPositionManager extends MemoryLogPositionManager implements
         positions.clear();
     }
 
+    //存储的时候,要存储内存和zookeeper
     public void persistLogPosition(final String destination, final LogPosition logPosition) {
         super.persistLogPosition(destination, logPosition);
         executor.submit(new Runnable() {
@@ -72,6 +74,7 @@ public class MixedLogPositionManager extends MemoryLogPositionManager implements
 
     }
 
+    //get的时候直接从内存中获取
     public LogPosition getLatestIndexBy(String destination) {
         LogPosition logPosition = super.getLatestIndexBy(destination);
         if (logPosition == nullPosition) {

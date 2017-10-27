@@ -15,7 +15,7 @@ import com.alibaba.otter.canal.store.helper.CanalEventUtils;
 
 /**
  * 基于meta信息的实现
- * 
+ * 获取所有客户端对该队列最小的消费点,从该位置进行恢复
  * @author jianghang 2012-7-10 下午05:02:33
  * @version 1.0.0
  */
@@ -39,11 +39,13 @@ public class MetaLogPositionManager extends AbstractCanalLifeCycle implements Ca
         }
     }
 
+    //不需要存储,因为他每次获取跟存储的位置没关系
     public void persistLogPosition(String destination, LogPosition logPosition) {
         // do nothing
         logger.info("persist LogPosition:{}", destination, logPosition);
     }
 
+    //获取所有客户端对该队列最小的消费点,从该位置进行恢复
     public LogPosition getLatestIndexBy(String destination) {
         List<ClientIdentity> clientIdentitys = metaManager.listAllSubscribeInfo(destination);
         LogPosition result = null;

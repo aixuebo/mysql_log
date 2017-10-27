@@ -15,7 +15,7 @@ import org.apache.commons.lang.StringUtils;
  *        dest1 每一个destination目的地
  *          running (EPHEMERAL)  存储ServerRunningData对象
  *          cluster
- *          parse---存储LogPosition信息
+ *          parse---存储LogPosition信息,即存储该destination队列已经同步masert的哪个位置了
  *          client1 每一个客户端--存储客户端ID
  *            running (EPHEMERAL)
  *            cluster

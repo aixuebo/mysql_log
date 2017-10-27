@@ -388,7 +388,7 @@ public class QueryLogEvent extends LogEvent {
     private String          host;
 
     /* using byte for query string */
-    protected String        query;
+    protected String        query;//原始的查询sql
     protected String        catalog;
     protected final String  dbname;
 
@@ -397,7 +397,7 @@ public class QueryLogEvent extends LogEvent {
     // inspection by the DBA
     private final long      execTime;
     private final int       errorCode;
-    private final long      sessionId;                                                                                           /* thread_id */
+    private final long      sessionId; /* thread_id 线程ID*/
 
     /**
      * 'flags2' is a second set of flags (on top of those in Log_event), for

@@ -26,6 +26,7 @@ public interface CanalEventSink<T> extends CanalLifeCycle {
      * @param destination
      * @throws CanalSinkException
      * @throws InterruptedException
+     * 执行sink处理,告诉sink此时运行的binlog是哪个master,以及处理哪个队列的事件
      */
     boolean sink(T event, InetSocketAddress remoteAddress, String destination) throws CanalSinkException,
                                                                               InterruptedException;

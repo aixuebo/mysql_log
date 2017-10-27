@@ -53,15 +53,15 @@ public abstract class AbstractEventParser<EVENT> extends AbstractCanalLifeCycle 
     private CanalAlarmHandler                        alarmHandler               = null;
 
     // 统计参数
-    protected AtomicBoolean                          profilingEnabled           = new AtomicBoolean(false);                // profile开关参数
+    protected AtomicBoolean                          profilingEnabled           = new AtomicBoolean(false);                // profile开关参数  用于查看解析用时
     protected AtomicLong                             receivedEventCount         = new AtomicLong();
-    protected AtomicLong                             parsedEventCount           = new AtomicLong();
-    protected AtomicLong                             consumedEventCount         = new AtomicLong();
-    protected long                                   parsingInterval            = -1;
-    protected long                                   processingInterval         = -1;
+    protected AtomicLong                             parsedEventCount           = new AtomicLong();//解析事件数量
+    protected AtomicLong                             consumedEventCount         = new AtomicLong();//处理sink的事件数量
+    protected long                                   parsingInterval            = -1;//解析消耗时间
+    protected long                                   processingInterval         = -1;//处理sink的消耗时间
 
     // 认证信息
-    protected volatile AuthenticationInfo            runningInfo;
+    protected volatile AuthenticationInfo            runningInfo;//正在读取的binlog服务
     protected String                                 destination;
 
     // binLogParser
@@ -78,12 +78,12 @@ public abstract class AbstractEventParser<EVENT> extends AbstractCanalLifeCycle 
                                                                                     }
                                                                                 };
 
-    protected EventTransactionBuffer                 transactionBuffer;
+    protected EventTransactionBuffer                 transactionBuffer;//不断的更新消费到哪个位置了
     protected int                                    transactionSize            = 1024;
     protected AtomicBoolean                          needTransactionPosition    = new AtomicBoolean(false);
     protected long                                   lastEntryTime              = 0L;
     protected volatile boolean                       detectingEnable            = true;                                    // 是否开启心跳检查
-    protected Integer                                detectingIntervalInSeconds = 3;                                       // 检测频率
+    protected Integer                                detectingIntervalInSeconds = 3;                                       // 检测频率  用于心跳检测
     protected volatile Timer                         timer;
     protected TimerTask                              heartBeatTimerTask;
     protected Throwable                              exception                  = null;
@@ -92,13 +92,13 @@ public abstract class AbstractEventParser<EVENT> extends AbstractCanalLifeCycle 
     //特殊异常处理参数
     protected int                                    specialExceptionCount = 0;//特殊异常计数
     protected int                                    specialExceptionCountThreshold = 3;//特殊异常计数阀值
-    protected boolean								 isFindEndPosition = false;//重连时查找数据库最新的位点
+    protected boolean								 isFindEndPosition = false;//true表示重连时查找数据库最新的位点
 
-    protected abstract BinlogParser buildParser();
+    protected abstract BinlogParser buildParser();//如何将binlog的事件转换成canal的Entry对象
 
-    protected abstract ErosaConnection buildErosaConnection();
+    protected abstract ErosaConnection buildErosaConnection();//如何创建连接获取binlog信息
 
-    protected abstract EntryPosition findStartPosition(ErosaConnection connection) throws IOException;
+    protected abstract EntryPosition findStartPosition(ErosaConnection connection) throws IOException;//从哪个位置开始读取binlog的master上的数据
     
     //update by yishun.chen
     //查找数据库最新的位点
@@ -189,9 +189,10 @@ public abstract class AbstractEventParser<EVENT> extends AbstractCanalLifeCycle 
                         // 重新链接，因为在找position过程中可能有状态，需要断开后重建
                         erosaConnection.reconnect();
 
+                        //设置如何处理事件对象
                         final SinkFunction sinkHandler = new SinkFunction<EVENT>() {
 
-                            private LogPosition lastPosition;
+                            private LogPosition lastPosition;//最后一个sink的位置是哪个
 
                             public boolean sink(EVENT event) {
                                 try {
@@ -326,6 +327,7 @@ public abstract class AbstractEventParser<EVENT> extends AbstractCanalLifeCycle 
         }
     }
 
+    //消费队列,即进行sink处理,如果需要的话可以统计信息
     protected boolean consumeTheEventAndProfilingIfNecessary(List<CanalEntry.Entry> entrys) throws CanalSinkException,
                                                                                            InterruptedException {
         long startTs = -1;
@@ -334,7 +336,7 @@ public abstract class AbstractEventParser<EVENT> extends AbstractCanalLifeCycle 
             startTs = System.currentTimeMillis();
         }
 
-        boolean result = eventSink.sink(entrys, (runningInfo == null) ? null : runningInfo.getAddress(), destination);
+        boolean result = eventSink.sink(entrys, (runningInfo == null) ? null : runningInfo.getAddress(), destination);//执行sink处理,告诉sink此时运行的binlog是哪个master
 
         if (enabled) {
             this.processingInterval = System.currentTimeMillis() - startTs;
@@ -347,16 +349,17 @@ public abstract class AbstractEventParser<EVENT> extends AbstractCanalLifeCycle 
         return result;
     }
 
+    //解析事件--如果需要的话,还可以统计信息,用于性能分析
     protected CanalEntry.Entry parseAndProfilingIfNecessary(EVENT bod) throws Exception {
         long startTs = -1;
         boolean enabled = getProfilingEnabled();
         if (enabled) {
             startTs = System.currentTimeMillis();
         }
-        CanalEntry.Entry event = binlogParser.parse(bod);
+        CanalEntry.Entry event = binlogParser.parse(bod);//解析该事件
 
         if (enabled) {
-            this.parsingInterval = System.currentTimeMillis() - startTs;
+            this.parsingInterval = System.currentTimeMillis() - startTs;//解析用时
         }
 
         if (parsedEventCount.incrementAndGet() < 0) {
@@ -435,7 +438,7 @@ public abstract class AbstractEventParser<EVENT> extends AbstractCanalLifeCycle 
                         // 如果未出现异常，或者有第一条正常数据
                         long now = System.currentTimeMillis();
                         long inteval = (now - lastEntryTime) / 1000;
-                        if (inteval >= detectingIntervalInSeconds) {
+                        if (inteval >= detectingIntervalInSeconds) {//说明超过心跳间隔了,提交给sink处理该事件,即该事件是服务发送的,不是binlog发送的事件
                             Header.Builder headerBuilder = Header.newBuilder();
                             headerBuilder.setExecuteTime(now);
                             Entry.Builder entryBuilder = Entry.newBuilder();

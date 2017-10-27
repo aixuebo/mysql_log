@@ -110,7 +110,7 @@ public class DirectLogFetcher extends LogFetcher {
             }
 
             // The first packet is a multi-packet, concatenate the packets.
-            while (netlen == MAX_PACKET_LENGTH) {//说明包慢着呢
+            while (netlen == MAX_PACKET_LENGTH) {//说明包满着呢
                 if (!fetch0(0, NET_HEADER_SIZE)) {
                     logger.warn("Reached end of input stream while fetching header");
                     return false;

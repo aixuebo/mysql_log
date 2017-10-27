@@ -73,7 +73,7 @@ public class LocalBinlogEventParser extends AbstractMysqlEventParser implements 
         if (logPosition == null) {// 找不到历史成功记录
             EntryPosition entryPosition = masterPosition;
 
-            // 判断一下是否需要按时间订阅
+            // 判断一下是否需要按时间订阅---即直接从master的设置的位置开始进行读取
             if (StringUtils.isEmpty(entryPosition.getJournalName())) {
                 // 如果没有指定binlogName，尝试按照timestamp进行查找
                 if (entryPosition.getTimestamp() != null) {

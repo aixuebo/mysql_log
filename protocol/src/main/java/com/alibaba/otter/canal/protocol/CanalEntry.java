@@ -12,7 +12,7 @@ public final class CanalEntry {
       implements com.google.protobuf.ProtocolMessageEnum {
     TRANSACTIONBEGIN(0, 1),
     ROWDATA(1, 2),
-    TRANSACTIONEND(2, 3),
+    TRANSACTIONEND(2, 3),//xid事务结束事件
     HEARTBEAT(3, 4),
     ;
     
@@ -88,14 +88,14 @@ public final class CanalEntry {
     INSERT(0, 1),
     UPDATE(1, 2),
     DELETE(2, 3),
-    CREATE(3, 4),
-    ALTER(4, 5),
-    ERASE(5, 6),
+    CREATE(3, 4),//主要用于提取数据库表名--创建表sql
+    ALTER(4, 5),//主要用于提取数据库表名
+    ERASE(5, 6),//drop table事件
     QUERY(6, 7),
-    TRUNCATE(7, 8),
-    RENAME(8, 9),
-    CINDEX(9, 10),
-    DINDEX(10, 11),
+    TRUNCATE(7, 8),//TRUNCATE table事件
+    RENAME(8, 9),//rename事件
+    CINDEX(9, 10),//CREATE INDEX事件sql
+    DINDEX(10, 11),//DROP INDEX事件sql
     ;
     
     public static final int INSERT_VALUE = 1;

@@ -58,7 +58,7 @@ public class MysqlEventParser extends AbstractMysqlEventParser implements CanalE
     private EntryPosition      standbyPosition;
     private long               slaveId;                                      // 链接到mysql的slave
     // 心跳检查信息
-    private String             detectingSQL;                                 // 心跳sql
+    private String             detectingSQL;                                 // 心跳sql  定期发送给master的sql去检查
     private MysqlConnection    metaConnection;                               // 查询meta信息的链接
     private TableMetaCache     tableMetaCache;                               // 对应meta
                                                                               // cache
@@ -72,6 +72,7 @@ public class MysqlEventParser extends AbstractMysqlEventParser implements CanalE
         return buildMysqlConnection(this.runningInfo);
     }
 
+    //获取dump mysql的binlog前,对一些元数据类需要初始化等操作
     protected void preDump(ErosaConnection connection) {
         if (!(connection instanceof MysqlConnection)) {
             throw new CanalParseException("Unsupported connection type : " + connection.getClass().getSimpleName());
@@ -214,7 +215,7 @@ public class MysqlEventParser extends AbstractMysqlEventParser implements CanalE
                 }
                 Long startTime = System.currentTimeMillis();
 
-                // 可能心跳sql为select 1
+                // 可能心跳sql为select 1  查看该sql是什么类型的sql,执行不同的sql方式
                 if (StringUtils.startsWithIgnoreCase(detectingSQL.trim(), "select")
                     || StringUtils.startsWithIgnoreCase(detectingSQL.trim(), "show")
                     || StringUtils.startsWithIgnoreCase(detectingSQL.trim(), "explain")
@@ -224,7 +225,7 @@ public class MysqlEventParser extends AbstractMysqlEventParser implements CanalE
                     mysqlConnection.update(detectingSQL);
                 }
 
-                Long costTime = System.currentTimeMillis() - startTime;
+                Long costTime = System.currentTimeMillis() - startTime;//记录心跳过程的查询耗时
                 if (haController != null && haController instanceof HeartBeatCallback) {
                     ((HeartBeatCallback) haController).onSuccess(costTime);
                 }
@@ -261,6 +262,7 @@ public class MysqlEventParser extends AbstractMysqlEventParser implements CanalE
         this.doSwitch(newRunningInfo);
     }
 
+    //参数是切换的节点
     public void doSwitch(AuthenticationInfo newRunningInfo) {
         // 1. 需要停止当前正在复制的过程
         // 2. 找到新的position点
@@ -268,7 +270,7 @@ public class MysqlEventParser extends AbstractMysqlEventParser implements CanalE
         // 切换ip
         String alarmMessage = null;
 
-        if (this.runningInfo.equals(newRunningInfo)) {
+        if (this.runningInfo.equals(newRunningInfo)) {//说明没有切换成功
             alarmMessage = "same runingInfo switch again : " + runningInfo.getAddress().toString();
             logger.warn(alarmMessage);
             return;
@@ -281,13 +283,13 @@ public class MysqlEventParser extends AbstractMysqlEventParser implements CanalE
             sendAlarm(destination, alarmMessage);
             return;
         } else {
-            stop();
+            stop();//停止当前服务
             alarmMessage = "try to ha switch, old:" + runningInfo.getAddress().toString() + ", new:"
                            + newRunningInfo.getAddress().toString();
             logger.warn(alarmMessage);
             sendAlarm(destination, alarmMessage);
             runningInfo = newRunningInfo;
-            start();
+            start();//重新开启一个mysql服务器去读取binlog
         }
     }
 

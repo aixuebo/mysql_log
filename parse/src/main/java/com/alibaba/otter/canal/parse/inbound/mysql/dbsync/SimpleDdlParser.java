@@ -8,7 +8,8 @@ import com.alibaba.otter.canal.protocol.CanalEntry.EventType;
 
 /**
  * 简单的ddl解析工具类，后续可使用cobar/druid的SqlParser进行语法树解析
- * 
+ *
+ * 该类使用在query模式事件上,而不是row模式事件上
  * <pre>
  * 解析支持：
  * a. 带schema: retl.retl_mark
@@ -23,9 +24,9 @@ import com.alibaba.otter.canal.protocol.CanalEntry.EventType;
  */
 public class SimpleDdlParser {
 
-    public static final String CREATE_PATTERN         = "^\\s*CREATE\\s*(TEMPORARY)?\\s*TABLE\\s*(.*)$";//创建表
-    public static final String DROP_PATTERN           = "^\\s*DROP\\s*(TEMPORARY)?\\s*TABLE\\s*(.*)$";
-    public static final String ALERT_PATTERN          = "^\\s*ALTER\\s*(IGNORE)?\\s*TABLE\\s*(.*)$";
+    public static final String CREATE_PATTERN         = "^\\s*CREATE\\s*(TEMPORARY)?\\s*TABLE\\s*(.*)$";//创建表  主要用于提取数据库表名
+    public static final String DROP_PATTERN           = "^\\s*DROP\\s*(TEMPORARY)?\\s*TABLE\\s*(.*)$";//主要用于提取数据库表名
+    public static final String ALERT_PATTERN          = "^\\s*ALTER\\s*(IGNORE)?\\s*TABLE\\s*(.*)$";//主要用于提取数据库表名
     public static final String TRUNCATE_PATTERN       = "^\\s*TRUNCATE\\s*(TABLE)?\\s*(.*)$";
     public static final String TABLE_PATTERN          = "^(IF\\s*NOT\\s*EXISTS\\s*)?(IF\\s*EXISTS\\s*)?(`?.+?`?[;\\(\\s]+?)?.*$";         // 采用非贪婪模式  获取tableName
     public static final String INSERT_PATTERN         = "^\\s*(INSERT|MERGE|REPLACE)(.*)$";
@@ -44,26 +45,27 @@ public class SimpleDdlParser {
      * http://dev.mysql.com/doc/refman/5.6/en/create-index.html
      * </pre>
      */
-    public static final String CREATE_INDEX_PATTERN   = "^\\s*CREATE\\s*(UNIQUE)?(FULLTEXT)?(SPATIAL)?\\s*INDEX\\s*(.*?)\\s*ON\\s*(.*?)$";
+    public static final String CREATE_INDEX_PATTERN   = "^\\s*CREATE\\s*(UNIQUE)?(FULLTEXT)?(SPATIAL)?\\s*INDEX\\s*(.*?)\\s*ON\\s*(.*?)$";//CREATE INDEX事件sql
     public static final String DROP_INDEX_PATTERN     = "^\\s*DROP\\s*INDEX\\s*(.*?)\\s*ON\\s*(.*?)$";
 
+    //解析sql,返回表相关的信息
     public static DdlResult parse(String queryString, String schmeaName) {
         queryString = removeComment(queryString); // 去除/* */的sql注释内容
-        DdlResult result = parseDdl(queryString, schmeaName, ALERT_PATTERN, 2);
+        DdlResult result = parseDdl(queryString, schmeaName, ALERT_PATTERN, 2);//主要用于提取数据库表名
         if (result != null) {
             result.setType(EventType.ALTER);
             return result;
         }
 
-        result = parseDdl(queryString, schmeaName, CREATE_PATTERN, 2);
+        result = parseDdl(queryString, schmeaName, CREATE_PATTERN, 2);//主要用于提取数据库表名
         if (result != null) {
             result.setType(EventType.CREATE);
             return result;
         }
 
-        result = parseDdl(queryString, schmeaName, DROP_PATTERN, 2);
+        result = parseDdl(queryString, schmeaName, DROP_PATTERN, 2);//主要用于提取数据库表名
         if (result != null) {
-            result.setType(EventType.ERASE);
+            result.setType(EventType.ERASE);//drop table事件
             return result;
         }
 
@@ -79,7 +81,7 @@ public class SimpleDdlParser {
 
             String[] renameStrings = queryString.split(",");
             if (renameStrings.length > 1) {
-                DdlResult lastResult = result;
+                DdlResult lastResult = result;//组成一个链条
                 for (int i = 1; i < renameStrings.length; i++) {
                     DdlResult ddlResult = parseRename(renameStrings[i], schmeaName, RENAME_REMNANT_PATTERN);
                     ddlResult.setType(EventType.RENAME);
@@ -123,6 +125,15 @@ public class SimpleDdlParser {
         return result;
     }
 
+    /**
+     *
+     * @param queryString sql
+     * @param schmeaName 数据库name
+     * @param pattern 匹配表达式
+     * @param index 正则表达式的索引位置
+     * @return
+     *
+     */
     private static DdlResult parseDdl(String queryString, String schmeaName, String pattern, int index) {
         Perl5Matcher matcher = new Perl5Matcher();
         if (matcher.matches(queryString, PatternUtils.getPattern(pattern))) {
@@ -133,6 +144,7 @@ public class SimpleDdlParser {
         return null;
     }
 
+    //符合update  insert  delete语法的返回true
     private static boolean isDml(String queryString, String pattern) {
         Perl5Matcher matcher = new Perl5Matcher();
         if (matcher.matches(queryString, PatternUtils.getPattern(pattern))) {

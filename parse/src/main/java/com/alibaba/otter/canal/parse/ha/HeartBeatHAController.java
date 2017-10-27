@@ -17,24 +17,26 @@ public class HeartBeatHAController extends AbstractCanalLifeCycle implements Can
 
     private static final Logger logger              = LoggerFactory.getLogger(HeartBeatHAController.class);
     // default 3 times
-    private int                 detectingRetryTimes = 3;
-    private int                 failedTimes         = 0;
-    private boolean             switchEnable        = false;
+    private int                 detectingRetryTimes = 3;//最大失败尝试次数
+    private int                 failedTimes         = 0;//失败次数
+    private boolean             switchEnable        = false;//true表示可以切换服务器
     private CanalHASwitchable   eventParser;
 
     public HeartBeatHAController(){
 
     }
 
+    //成功的时候回调函数--清空失败的次数
     public void onSuccess(long costTime) {
         failedTimes = 0;
     }
 
+    //失败的时候回调函数
     public void onFailed(Throwable e) {
         failedTimes++;
         // 检查一下是否超过失败次数
         synchronized (this) {
-            if (failedTimes > detectingRetryTimes) {
+            if (failedTimes > detectingRetryTimes) {//说明已经失败很多次了
                 if (switchEnable) {
                     eventParser.doSwitch();// 通知执行一次切换
                     failedTimes = 0;

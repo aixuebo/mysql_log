@@ -19,12 +19,13 @@ import com.google.common.collect.MigrateMap;
 
 /**
  * 处理table meta解析和缓存
- * 
+ * 使用desc 数据库.table命令返回具体的信息就是该表数据
  * @author jianghang 2013-1-17 下午10:15:16
  * @version 1.0.0
  */
 public class TableMetaCache {
 
+    //属性的描述内容
     public static final String     COLUMN_NAME    = "COLUMN_NAME";
     public static final String     COLUMN_TYPE    = "COLUMN_TYPE";
     public static final String     IS_NULLABLE    = "IS_NULLABLE";
@@ -38,6 +39,7 @@ public class TableMetaCache {
 
     public TableMetaCache(MysqlConnection con){
         this.connection = con;
+        //获取一个表的元数据信息,缓存存在则用缓存,否则使用desc 表名命令去加载
         tableMetaCache = MigrateMap.makeComputingMap(new Function<String, TableMeta>() {
 
             public TableMeta apply(String name) {
@@ -62,6 +64,7 @@ public class TableMetaCache {
         return getTableMeta(schema, table, true);
     }
 
+    //获取元数据信息
     public TableMeta getTableMeta(String schema, String table, boolean useCache) {
         if (!useCache) {
             tableMetaCache.remove(getFullName(schema, table));
@@ -70,10 +73,12 @@ public class TableMetaCache {
         return tableMetaCache.get(getFullName(schema, table));
     }
 
+    //删除一张表的元数据信息
     public void clearTableMeta(String schema, String table) {
         tableMetaCache.remove(getFullName(schema, table));
     }
 
+    //删除schema这个库的所有表的元数据信息
     public void clearTableMetaWithSchemaName(String schema) {
         // Set<String> removeNames = new HashSet<String>(); //
         // 存一份临时变量，避免在遍历的时候进行删除
@@ -93,11 +98,13 @@ public class TableMetaCache {
         tableMetaCache.clear();
     }
 
+    //使用desc 数据库.table命令返回具体的信息就是该表数据
     private TableMeta getTableMeta0(String fullname) throws IOException {
         ResultSetPacket packet = connection.query("desc " + fullname);
         return new TableMeta(fullname, parserTableMeta(packet));
     }
 
+    //解析  使用desc 数据库.table命令返回具体的信息就是该表数据
     private List<FieldMeta> parserTableMeta(ResultSetPacket packet) {
         Map<String, Integer> nameMaps = new HashMap<String, Integer>(6, 1f);
 
@@ -106,10 +113,10 @@ public class TableMetaCache {
             nameMaps.put(fieldPacket.getOriginalName(), index++);
         }
 
-        int size = packet.getFieldDescriptors().size();
-        int count = packet.getFieldValues().size() / packet.getFieldDescriptors().size();
+        int size = packet.getFieldDescriptors().size();//一共多少个schema
+        int count = packet.getFieldValues().size() / packet.getFieldDescriptors().size();//一共多少行数据,行数 = 返回的总value数/schema数
         List<FieldMeta> result = new ArrayList<FieldMeta>();
-        for (int i = 0; i < count; i++) {
+        for (int i = 0; i < count; i++) {//循环每一行,每一行表示一个列的描述内容
             FieldMeta meta = new FieldMeta();
             // 做一个优化，使用String.intern()，共享String对象，减少内存使用
             meta.setColumnName(packet.getFieldValues().get(nameMaps.get(COLUMN_NAME) + i * size).intern());
@@ -125,6 +132,7 @@ public class TableMetaCache {
         return result;
     }
 
+    //数据库.table
     private String getFullName(String schema, String table) {
         StringBuilder builder = new StringBuilder();
         return builder.append('`')

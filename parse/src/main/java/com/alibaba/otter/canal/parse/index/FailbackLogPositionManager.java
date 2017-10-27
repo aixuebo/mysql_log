@@ -8,7 +8,8 @@ import com.alibaba.otter.canal.protocol.position.LogPosition;
 
 /**
  * 实现基于failover查找的机制完成meta的操作
- * 
+ *
+ * 存储到两个地方---如果出错的情况下
  * <pre>
  * 应用场景：比如针对内存buffer，出现HA切换，先尝试从内存buffer区中找到lastest position，如果不存在才尝试找一下meta里消费的信息
  * </pre>

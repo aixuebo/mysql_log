@@ -25,6 +25,7 @@ public abstract class AbstractMysqlEventParser extends AbstractEventParser {
     protected boolean           filterRows              = false;
     protected boolean           filterTableError        = false;
 
+    //解析如何转换事件
     protected BinlogParser buildParser() {
         LogEventConvert convert = new LogEventConvert();
         if (eventFilter != null && eventFilter instanceof AviaterRegexFilter) {

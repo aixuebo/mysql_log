@@ -14,7 +14,7 @@ import com.google.common.collect.MapMaker;
  */
 public class MemoryLogPositionManager extends AbstractCanalLifeCycle implements CanalLogPositionManager {
 
-    protected Map<String, LogPosition> positions;
+    protected Map<String, LogPosition> positions;//存储在内存里面
 
     public void start() {
         super.start();

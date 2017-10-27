@@ -5,7 +5,7 @@ import com.alibaba.otter.canal.parse.exception.CanalParseException;
 import com.alibaba.otter.canal.protocol.position.LogPosition;
 
 /**
- * 接口组合
+ * 接口组合-----记录每一个队列已经同步master的哪个日志位置了
  * 
  * @author jianghang 2012-7-7 上午10:02:02
  * @version 1.0.0
