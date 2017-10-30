@@ -80,7 +80,7 @@ public abstract class AbstractEventParser<EVENT> extends AbstractCanalLifeCycle 
 
     protected EventTransactionBuffer                 transactionBuffer;//不断的更新消费到哪个位置了
     protected int                                    transactionSize            = 1024;
-    protected AtomicBoolean                          needTransactionPosition    = new AtomicBoolean(false);
+    protected AtomicBoolean                          needTransactionPosition    = new AtomicBoolean(false);//true表示从事务的开始位置开始读取binlog数据
     protected long                                   lastEntryTime              = 0L;
     protected volatile boolean                       detectingEnable            = true;                                    // 是否开启心跳检查
     protected Integer                                detectingIntervalInSeconds = 3;                                       // 检测频率  用于心跳检测
@@ -116,8 +116,7 @@ public abstract class AbstractEventParser<EVENT> extends AbstractCanalLifeCycle 
         }
     }
 
-    public AbstractEventParser(){
-        // 初始化一下
+    public AbstractEventParser(){        // 初始化一下
         transactionBuffer = new EventTransactionBuffer(new TransactionFlushCallback() {
 
             public void flush(List<CanalEntry.Entry> transaction) throws InterruptedException {
