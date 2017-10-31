@@ -24,7 +24,7 @@ public class DirectLogFetcherTest {
         try {
             MysqlConnector connector = new MysqlConnector(new InetSocketAddress("127.0.0.1", 3306), "xxxxx", "xxxxx");
             connector.connect();
-            sendBinlogDump(connector, "mysql-bin.001016", 4L, 3);
+            sendBinlogDump(connector, "mysql-bin.001910", 4L, 1);
 
             fetcher.start(connector.getChannel());
 

@@ -25,14 +25,17 @@ public class LocalBinlogDumpTest {
 
     @Test
     public void testSimple() {
-        String directory = "/home/jianghang/tmp/binlog";
+        //String directory = "/home/jianghang/tmp/binlog";
+        String directory = "E://linux//mysql";
+
         final LocalBinlogEventParser controller = new LocalBinlogEventParser();
-        final EntryPosition startPosition = new EntryPosition("mysql-bin.000006", 4L);
+        final EntryPosition startPosition = new EntryPosition("mysql-bin.001916.bak", 4L);
 
         controller.setMasterInfo(new AuthenticationInfo(new InetSocketAddress("127.0.0.1", 3306), "xxxxx", "xxxxx"));
         controller.setConnectionCharset(Charset.forName("UTF-8"));
         controller.setDirectory(directory);
         controller.setMasterPosition(startPosition);
+        controller.setDestination("exzample");
         controller.setEventSink(new AbstractCanalEventSinkTest<List<Entry>>() {
 
             public boolean sink(List<Entry> entrys, InetSocketAddress remoteAddress, String destination)

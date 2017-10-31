@@ -56,13 +56,13 @@ public class AbstractCanalClientTest {
         context_format += "* Batch Id: [{}] ,count : [{}] , memsize : [{}] , Time : {}" + SEP;
         context_format += "* Start : [{}] " + SEP;
         context_format += "* End : [{}] " + SEP;
-        context_format += "****************************************************" + SEP;
+        context_format += "****************************************************\r\n" + SEP;
 
         row_format = SEP
-                     + "----------------> binlog[{}:{}] , name[{},{}] , eventType : {} , executeTime : {} , delay : {}ms"
+                     + "----------------> binlog[{}:{}] , name[{},{}] , eventType : {} , executeTime : {} , delay : {}ms \n"
                      + SEP;
 
-        transaction_format = SEP + "================> binlog[{}:{}] , executeTime : {} , delay : {}ms" + SEP;
+        transaction_format = SEP + "================> binlog[{}:{}] , executeTime : {} , delay : {}ms \n" + SEP;
 
     }
 
@@ -173,6 +173,8 @@ public class AbstractCanalClientTest {
             long executeTime = entry.getHeader().getExecuteTime();
             long delayTime = new Date().getTime() - executeTime;//记录客户端收到时候---真正执行的时候的延迟时间
 
+            System.out.println("entry.getEntryType()==="+entry.getEntryType() + "==="+ entry.getHeader().getEventType());
+
             if (entry.getEntryType() == EntryType.TRANSACTIONBEGIN || entry.getEntryType() == EntryType.TRANSACTIONEND) {//关于事务的处理
                 if (entry.getEntryType() == EntryType.TRANSACTIONBEGIN) {//事务开始
                     TransactionBegin begin = null;
@@ -206,6 +208,8 @@ public class AbstractCanalClientTest {
                 continue;
             }
 
+
+
             if (entry.getEntryType() == EntryType.ROWDATA) {
                 RowChange rowChage = null;
                 try {
@@ -227,12 +231,22 @@ public class AbstractCanalClientTest {
                     continue;
                 }
 
+                System.out.println("entry.getEntryType()"+entry.getEntryType());
                 for (RowData rowData : rowChage.getRowDatasList()) {
                     if (eventType == EventType.DELETE) {
+                        System.out.println("getBeforeColumnsList");
                         printColumn(rowData.getBeforeColumnsList());
+                        System.out.println("getAfterColumnsList");
+                        printColumn(rowData.getAfterColumnsList());
                     } else if (eventType == EventType.INSERT) {
+                        System.out.println("getBeforeColumnsList");
+                        printColumn(rowData.getBeforeColumnsList());
+                        System.out.println("getAfterColumnsList");
                         printColumn(rowData.getAfterColumnsList());
                     } else {
+                        System.out.println("getBeforeColumnsList");
+                        printColumn(rowData.getBeforeColumnsList());
+                        System.out.println("getAfterColumnsList");
                         printColumn(rowData.getAfterColumnsList());
                     }
                 }
