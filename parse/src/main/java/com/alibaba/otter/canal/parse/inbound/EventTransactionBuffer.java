@@ -24,8 +24,9 @@ public class EventTransactionBuffer extends AbstractCanalLifeCycle {
     private int                      indexMask;
     private CanalEntry.Entry[]       entries;//存放事件对象的队列
 
-    private AtomicLong               putSequence   = new AtomicLong(INIT_SQEUENCE); // 代表当前put操作最后一次写操作发生的位置
-    private AtomicLong               flushSequence = new AtomicLong(INIT_SQEUENCE); // 代表满足flush条件后最后一次数据flush的时间
+    //以下两个属性对应的指针都是针对entries这个队列来说的
+    private AtomicLong               putSequence   = new AtomicLong(INIT_SQEUENCE); // 代表当前put操作最后一次写操作发生的位置,即事务最终的提交的位置
+    private AtomicLong               flushSequence = new AtomicLong(INIT_SQEUENCE); // 代表满足flush条件后最后一次数据flush的时间,即上一个事务的最后位置,也是现在事务的开始位置
 
     private TransactionFlushCallback flushCallback;//数据事务提交的函数---确保事务可以同时提交和回滚
 
@@ -39,7 +40,7 @@ public class EventTransactionBuffer extends AbstractCanalLifeCycle {
 
     public void start() throws CanalStoreException {
         super.start();
-        if (Integer.bitCount(bufferSize) != 1) {
+        if (Integer.bitCount(bufferSize) != 1) {//必须是2的整数倍数
             throw new IllegalArgumentException("bufferSize must be a power of 2");
         }
 
@@ -70,9 +71,9 @@ public class EventTransactionBuffer extends AbstractCanalLifeCycle {
                 break;
             case TRANSACTIONEND:
                 put(entry);
-                flush();
+                flush();//事务结束了,要进行刷新数据
                 break;
-            case ROWDATA:
+            case ROWDATA://表示事务内的一行数据
                 put(entry);
                 // 针对非DML的数据，直接输出，不进行buffer控制
                 EventType eventType = entry.getHeader().getEventType();
@@ -158,7 +159,7 @@ public class EventTransactionBuffer extends AbstractCanalLifeCycle {
      * @version 1.0.0
      */
     public static interface TransactionFlushCallback {
-
+        //参数集合表示的是该事务要提交的内容,即一个事务内的数据
         public void flush(List<CanalEntry.Entry> transaction) throws InterruptedException;
     }
 

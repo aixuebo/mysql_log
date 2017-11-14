@@ -21,7 +21,7 @@ public class CanalEventUtils {
     public static LogPosition min(LogPosition position1, LogPosition position2) {
         if (position1.getIdentity().equals(position2.getIdentity())) {//说明主从库相同
             // 首先根据文件进行比较
-            if (position1.getPostion().getJournalName().compareTo(position2.getPostion().getJournalName()) > 0) {
+            if (position1.getPostion().getJournalName().compareTo(position2.getPostion().getJournalName()) > 0) {//比较binlog的文件名
                 return position2;
             } else if (position1.getPostion().getJournalName().compareTo(position2.getPostion().getJournalName()) < 0) {
                 return position1;

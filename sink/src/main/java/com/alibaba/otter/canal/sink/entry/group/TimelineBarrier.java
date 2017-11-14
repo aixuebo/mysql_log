@@ -32,7 +32,7 @@ public class TimelineBarrier implements GroupBarrier<Event> {
     protected ReentrantLock       lock           = new ReentrantLock();
     protected Condition           condition      = lock.newCondition();
     protected volatile long       threshold;
-    protected BlockingQueue<Long> lastTimestamps = new PriorityBlockingQueue<Long>(); // 当前通道最后一次single的时间戳
+    protected BlockingQueue<Long> lastTimestamps = new PriorityBlockingQueue<Long>(); // 当前通道最后一次single的时间戳,优先队列
 
     public TimelineBarrier(int groupSize){
         this.groupSize = groupSize;
@@ -48,8 +48,8 @@ public class TimelineBarrier implements GroupBarrier<Event> {
         long timestamp = getTimestamp(event);
         try {
             lock.lockInterruptibly();
-            single(timestamp);
-            while (isPermit(event, timestamp) == false) {
+            single(timestamp);//添加到lastTimestamps队列中
+            while (isPermit(event, timestamp) == false) {//不断循环,.知道该数据被处理掉为止
                 condition.await();
             }
         } finally {
@@ -138,6 +138,7 @@ public class TimelineBarrier implements GroupBarrier<Event> {
         }
     }
 
+    //返回该sql执行的时间
     private Long getTimestamp(Event event) {
         return event.getEntry().getHeader().getExecuteTime();
     }

@@ -33,8 +33,8 @@ public class EntryEventSink extends AbstractCanalEventSink<List<CanalEntry.Entry
     private static final Logger    logger                        = LoggerFactory.getLogger(EntryEventSink.class);
     private static final int       maxFullTimes                  = 10;
     private CanalEventStore<Event> eventStore;//事件存储容器
-    protected boolean              filterTransactionEntry        = false;                                        // 是否需要过滤事务头/尾
-    protected boolean              filterEmtryTransactionEntry   = true;                                         // 是否需要过滤空的事务头/尾
+    protected boolean              filterTransactionEntry        = false;                                        // 是否需要过滤事务头/尾,true表示不要事务开始、事务结束事件
+    protected boolean              filterEmtryTransactionEntry   = true;                                         // 是否需要过滤空的事务头/尾,true表示事件只有开始和结束,没有数据内容的事件,要被过滤掉,不去执行
     //两种阀值去控制空的事件去sink处理
     protected long                 emptyTransactionInterval      = 5 * 1000;                                     // 空的事务输出的频率
     protected long                 emptyTransctionThresold       = 8192;                                         // 超过1024个事务头，输出一个
@@ -78,10 +78,10 @@ public class EntryEventSink extends AbstractCanalEventSink<List<CanalEntry.Entry
                                                                                                            throws CanalSinkException,
                                                                                                            InterruptedException {
         List rowDatas = entrys;
-        if (filterTransactionEntry) {
+        if (filterTransactionEntry) {//true表示不要事务开始、事务结束事件
             rowDatas = new ArrayList<CanalEntry.Entry>();
             for (CanalEntry.Entry entry : entrys) {
-                if (entry.getEntryType() == EntryType.ROWDATA) {
+                if (entry.getEntryType() == EntryType.ROWDATA) {//只要ROWDATA事件
                     rowDatas.add(entry);
                 }
             }
@@ -114,7 +114,7 @@ public class EntryEventSink extends AbstractCanalEventSink<List<CanalEntry.Entry
             return doSink(events);
         } else {
             // 需要过滤的数据
-            if (filterEmtryTransactionEntry && !CollectionUtils.isEmpty(events)) {
+            if (filterEmtryTransactionEntry && !CollectionUtils.isEmpty(events)) {//true表示事件只有开始和结束,没有数据内容的事件,要被过滤掉,不去执行
                 long currentTimestamp = events.get(0).getEntry().getHeader().getExecuteTime();//第一个事件的执行时间
                 // 基于一定的策略控制，放过空的事务头和尾，便于及时更新数据库位点，表明工作正常
                 if (Math.abs(currentTimestamp - lastEmptyTransactionTimestamp) > emptyTransactionInterval
@@ -131,7 +131,7 @@ public class EntryEventSink extends AbstractCanalEventSink<List<CanalEntry.Entry
     }
 
     //对数据库.table进行过滤
-    //true表示过滤成功,选择要处理该表
+    //true表示过滤成功,选择要处理该表,false表示要对该事件进行丢弃掉
     protected boolean doFilter(Event event) {
         if (filter != null && event.getEntry().getEntryType() == EntryType.ROWDATA) {
             String name = getSchemaNameAndTableName(event.getEntry());
@@ -177,9 +177,9 @@ public class EntryEventSink extends AbstractCanalEventSink<List<CanalEntry.Entry
     private void applyWait(int fullTimes) {
         int newFullTimes = fullTimes > maxFullTimes ? maxFullTimes : fullTimes;
         if (fullTimes <= 3) { // 3次以内
-            Thread.yield();
+            Thread.yield();//让线程让开cpu,让别人去执行,不需要等待
         } else { // 超过3次，最多只sleep 10ms
-            LockSupport.parkNanos(1000 * 1000L * newFullTimes);
+            LockSupport.parkNanos(1000 * 1000L * newFullTimes);//超过三次后,就睡眠
         }
 
     }

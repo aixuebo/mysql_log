@@ -70,7 +70,7 @@ public class MemoryEventStoreWithBuffer extends AbstractCanalStoreScavenge imple
 
     public void start() throws CanalStoreException {
         super.start();
-        if (Integer.bitCount(bufferSize) != 1) {
+        if (Integer.bitCount(bufferSize) != 1) {//必须是2的整数倍
             throw new IllegalArgumentException("bufferSize must be a power of 2");
         }
 
@@ -133,7 +133,7 @@ public class MemoryEventStoreWithBuffer extends AbstractCanalStoreScavenge imple
                     nanos = notFull.awaitNanos(nanos);
                 } catch (InterruptedException ie) {
                     notFull.signal(); // propagate to non-interrupted thread
-                    throw ie;
+                    throw ie;//抛出异常,退出put操作
                 }
             }
         } finally {

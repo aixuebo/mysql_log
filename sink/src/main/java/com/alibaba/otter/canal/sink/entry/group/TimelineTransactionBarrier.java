@@ -15,6 +15,7 @@ import com.alibaba.otter.canal.store.model.Event;
  */
 public class TimelineTransactionBarrier extends TimelineBarrier {
 
+    //true表示此时线程处理的就是自己这个事务
     private ThreadLocal<Boolean> inTransaction = new ThreadLocal() {
 
                                                    protected Object initialValue() {
@@ -77,6 +78,7 @@ public class TimelineTransactionBarrier extends TimelineBarrier {
         }
     }
 
+    //如何处理该事件
     protected boolean isPermit(Event event, long state) {
         if (txState.intValue() == 1 && inTransaction.get()) { // 如果处于事务中，直接允许通过。因为事务头已经做过判断
             return true;
@@ -109,10 +111,12 @@ public class TimelineTransactionBarrier extends TimelineBarrier {
         txState.set(0);// 重新置位
     }
 
+    //是否是事务开始
     private boolean isTransactionBegin(Event event) {
         return event.getEntry().getEntryType() == EntryType.TRANSACTIONBEGIN;
     }
 
+    //是否是事务结束
     private boolean isTransactionEnd(Event event) {
         return event.getEntry().getEntryType() == EntryType.TRANSACTIONEND;
     }
